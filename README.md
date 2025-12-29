@@ -1,1 +1,1 @@
-# cu-transformer
+# gpt2-engine-cpp
