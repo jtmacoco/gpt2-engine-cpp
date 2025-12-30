@@ -6,13 +6,13 @@
 using namespace std;
 
 //embeddings shape (50257, 768)
-constexpr int VOCAB_SIZE = 50257;
-constexpr int DIM = 768;
-constexpr size_t TOTAL_ELEMENTS = (size_t)VOCAB_SIZE*DIM;
+constexpr int kVocabSize = 50257;
+constexpr int kDimensions = 768;
+constexpr size_t kTotalElements = (size_t)kVocabSize*kDimensions;
 
 int main(){
     const char * file_path = "../../data/weights_embeddings.bin";
-    vector<float> weights(TOTAL_ELEMENTS);
+    vector<float> weights(kTotalElements);
     ifstream file_reader(file_path,ios::binary);
     if(!file_reader){
         fprintf(stderr, "Error: Failed to open file weights_embeddings.bin \n");
@@ -23,5 +23,5 @@ int main(){
         fprintf(stderr, "Error: Failed while reaindg only read %d bytes \n",file_reader.gcount());
         return 1;
     }
-    printf("Successfully loaded %d weights \n",TOTAL_ELEMENTS);
+    printf("Successfully loaded %d weights \n",kTotalElements);
 }
