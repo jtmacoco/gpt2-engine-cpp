@@ -1,4 +1,4 @@
-#include "../../include/weights_loader.hpp"
+#include "weights_loader.hpp"
 #include <fstream>
 #include <cstdio>
 

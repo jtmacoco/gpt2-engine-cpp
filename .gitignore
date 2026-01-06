@@ -1,3 +1,14 @@
 myvenv/
 outline.md
+#Ignore data
 weights_embeddings.bin
+
+#Ignore the build directory
+build/
+bin/
+out/
+
+#Ignore IDE specific files
+.vscode/
+.idea/
+*.swp
