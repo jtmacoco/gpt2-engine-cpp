@@ -19,7 +19,7 @@ namespace WeightsLoader{
             fprintf(stderr, "Error: Failed while reaindg only read %ld bytes \n",file_reader.gcount());
             return {};
         }
-        printf("Successfully loaded %zu weights \n",kTotalElements);
+        //printf("Successfully loaded %zu weights \n",kTotalElements);
         return weights;
     }
 }
