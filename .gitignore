@@ -1,7 +1,12 @@
 myvenv/
 outline.md
+tags
+.ctags
 #Ignore data
 weights_embeddings.bin
+vocab.json
+merges.txt
+
 
 #Ignore the build directory
 build/

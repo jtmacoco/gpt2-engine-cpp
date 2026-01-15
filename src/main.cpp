@@ -1,21 +1,17 @@
 #include "weights_loader.hpp"
+#include "tokenizer.hpp"
 #include <iostream>
 #include <filesystem>
+#include <string>
 namespace fs = std::filesystem;
 
 int main(int argc, char** argv){
-   fs::path weights_file;
-   if (argc > 1)
-      weights_file = argv[1];
-   else{
-      fprintf(stderr,"Missing argument .bin path \n");
-      return 1;
-   }
-   if(!fs::exists(weights_file)){
-      fprintf(stderr,"Weights file not found: %s \n",weights_file.c_str());
-      return 1;
-   }
+   std::string weights_file = "data/weights_embeddings.bin";
+   auto weights = WeightsLoader::load_weights(weights_file);
 
-   auto weights = WeightsLoader::load_weights(weights_file.c_str());
+   std::string vocab_path = "data/vocab.json";
+   std::string merges_path = "data/merges.txt";
+   Tokenizer tokenizer(vocab_path,merges_path);
+
    return 0;
 }
