@@ -12,6 +12,11 @@ int main(int argc, char** argv){
    std::string vocab_path = "data/vocab.json";
    std::string merges_path = "data/merges.txt";
    Tokenizer tokenizer(vocab_path,merges_path);
+   std::vector<int> tokens = tokenizer.Encoder("Hello World");
+   for (int i = 0; i < tokens.size(); i++){
+       std::cout<< tokens[i] << std::endl;
+   }
+   
 
    return 0;
 }
