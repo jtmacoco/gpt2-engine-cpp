@@ -14,8 +14,12 @@ int main(int argc, char** argv){
    Tokenizer tokenizer(vocab_path,merges_path);
    std::vector<int> tokens = tokenizer.Encoder("Hello World");
    for (int i = 0; i < tokens.size(); i++){
-       std::cout<< tokens[i] << std::endl;
+       std::cout<< tokens[i] << " "; 
    }
+   std::cout<<std::endl;
+
+   std::string text = tokenizer.Decoder(tokens);
+   std::cout<< text << std::endl;
    
 
    return 0;

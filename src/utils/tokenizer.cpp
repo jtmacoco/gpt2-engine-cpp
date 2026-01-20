@@ -5,7 +5,7 @@
 #include <sstream>
 #include <list>
 
-std::unordered_map<unsigned char, std::string> Tokenizer::get_bytes_to_unicode(){
+std::unordered_map<unsigned char, std::string> Tokenizer::GetBytesToUnicode(){
     std::unordered_map<unsigned char, std::string> byte_encoder;
 
     std::vector<int> bs;
@@ -39,6 +39,16 @@ std::unordered_map<unsigned char, std::string> Tokenizer::get_bytes_to_unicode()
 
     return byte_encoder;
 
+}
+
+std::unordered_map<std::string, unsigned char> Tokenizer::GetUnicodeToBytes(){
+
+    std::unordered_map<std::string, unsigned char> unicode_decoder;
+
+    for (const auto& pair : byte_encoder_){
+        unicode_decoder[pair.second] = pair.first;
+    }
+    return unicode_decoder;
 }
 
 Tokenizer::Tokenizer(const std::string& vocab_path, const std::string& merge_path){
@@ -78,7 +88,8 @@ Tokenizer::Tokenizer(const std::string& vocab_path, const std::string& merge_pat
         rank++;
     }//end while
 
-    byte_encoder = get_bytes_to_unicode();
+    byte_encoder_ = GetBytesToUnicode();
+    byte_decoder_ = GetUnicodeToBytes();
 
 }//end Tokenizer constructor
 
@@ -88,7 +99,7 @@ std::vector<int> Tokenizer::Encoder(const std::string& text){
 
     //convert input text to bye-encoding for weird ascii
     for (unsigned char ch : text){
-        encoded_text.push_back(byte_encoder[ch]);
+        encoded_text.push_back(byte_encoder_[ch]);
     }
 
     //Iteratively find the highes priority pair (lowest rank index) and merge
@@ -136,9 +147,39 @@ std::vector<int> Tokenizer::Encoder(const std::string& text){
 }//end Tokenizer
 
 std:: string Tokenizer::Decoder(const std::vector<int>& tokens){
-    //TODO
-    std::string dummy = "";
-    return dummy;
+    std::string bpe_text = "";
+
+    //concat all tokens into one raw string
+    for (size_t i = 0; i < tokens.size(); ++i){
+        bpe_text += inv_vocab_map_[tokens[i]];
+    }
+
+    std::string decoded_text = "";
+    //iterate over the BPE string to convert to original bytes
+    for (size_t i = 0; i < bpe_text.size();){
+
+        //try to match 1-byte character (OG ASCII)
+        std::string one_byte = bpe_text.substr(i,1);
+
+        //try to match 2-byte character (Special chars like Ġ)
+        //check bounds to ensure no segfault at end of string
+        std::string two_bytes = (i + 1 < bpe_text.length()) ? bpe_text.substr(i,2) : "";
+
+        if (!two_bytes.empty() && byte_decoder_.count(two_bytes)){
+            //found special character so add a space
+            decoded_text += byte_decoder_.at(two_bytes);
+            i += 2;
+        }
+        else if (byte_decoder_.count(one_byte)){
+            decoded_text += byte_decoder_.at(one_byte);
+            i+=1;
+        }
+        else{//fallback 
+            decoded_text += bpe_text[i];
+            i+=1;
+        }
+    }
+    return decoded_text;
 }
 
 
