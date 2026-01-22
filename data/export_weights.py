@@ -8,7 +8,12 @@ model = AutoModelForCausalLM.from_pretrained("openai-community/gpt2")
 
 state_dict = model.state_dict()
 
-embeddings = state_dict['transformer.wte.weight'].detach().numpy()
+wte = state_dict['transformer.wte.weight'].detach().numpy() #
 
-embeddings.tofile("weights_embeddings.bin")
-print(f"Exported embeddings shape {embeddings.shape}")
+wpe = state_dict['transformer.wpe.weight'].detach().numpy()
+
+with open("gpt2_embeddings.bin", "wb") as f:
+    wte.tofile(f) # Write WTE first
+    wpe.tofile(f) # Write WPE immediately after
+
+print(f"Exported WTE {wte.shape} and WPE {wpe.shape}")

@@ -6,7 +6,7 @@
 namespace fs = std::filesystem;
 
 int main(int argc, char** argv){
-   std::string weights_file = "data/weights_embeddings.bin";
+   std::string weights_file = "data/gpt2_embeddings.bin";
    auto weights = WeightsLoader::load_weights(weights_file);
 
    std::string vocab_path = "data/vocab.json";

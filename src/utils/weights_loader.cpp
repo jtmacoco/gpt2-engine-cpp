@@ -3,7 +3,6 @@
 #include <cstdio>
 #include <iostream>
 
-
 namespace WeightsLoader{
     std::vector<float> load_weights(const std::string file_path){
         std::vector<float> weights(kTotalElements);

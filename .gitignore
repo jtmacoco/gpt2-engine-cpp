@@ -2,8 +2,9 @@ myvenv/
 outline.md
 tags
 .ctags
+
 #Ignore data
-weights_embeddings.bin
+gpt2_embeddings.bin
 vocab.json
 merges.txt
 
