@@ -20,7 +20,7 @@ struct GPT2Weights{
     }
 };
 namespace WeightsLoader{
-    constexpr size_t kTotalElements = (size_t)((kVocabSize + kModelSize) * kModelSize);
+    constexpr size_t kTotalElements = (size_t)((kVocabSize + kMaxSequence) * kModelSize);
 
     std::vector<float> load_weights(const std::string file_path);
 };
