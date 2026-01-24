@@ -22,7 +22,7 @@ void InferenceEngine::ApplyEmbedding(const std::vector<int>& tokens, float* outp
 
         //ex t=0 jump 0 steps, t=1 jum 768 steps
         float* target_vec = output_buffer + (t* kModelSize);
-        
+
         //compute embedding by combining token and position vectors
         for (size_t i = 0; i < kModelSize; ++i){
             target_vec[i] = token_vec[i] + pos_vec[i];
@@ -42,12 +42,12 @@ void InferenceEngine::ApplyLayerNorm(float* x, float* beta, float* gamma, int di
     //calculate the numerator variance eq
     for (size_t i = 0; i < dim; ++i){
         float dif = (x[i] - mean);
-        sum_square += dif*dif
+        sum_square += dif*dif;
     }
 
     float var = sum_square/(dim);
 
-    float esp = std::numeric_limits<float>min();//maybe need to change
+    float esp = std::numeric_limits<float>::min();//maybe need to change
 
     float std_dev = std::sqrt(var+esp);
 
