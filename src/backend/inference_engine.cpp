@@ -1,5 +1,4 @@
 #include "inference_engine.hpp"
-#include <limits>
 #include <cmath>
 
 InferenceEngine::InferenceEngine(const GPT2Weights& weights):weights_(weights){}
@@ -47,7 +46,7 @@ void InferenceEngine::ApplyLayerNorm(float* x, float* beta, float* gamma, int di
 
     float var = sum_square/(dim);
 
-    float esp = std::numeric_limits<float>::min();//maybe need to change
+    float esp = 1e-5;
 
     float std_dev = std::sqrt(var+esp);
 
