@@ -6,6 +6,7 @@ void InferenceEngine::ApplyEmbedding(const std::vector<int>& tokens, float* outp
     int seq_len = tokens.size();
     if (seq_len > kMaxSequence){
         std::cerr << "Error: Input Sequence (" << seq_len << ")execeeds maximum model context" << std::endl;
+        return;
     }
 
     //iterate through tokens to compute embeddings
