@@ -1,4 +1,6 @@
 #include "inference_engine.hpp"
+#include <limits>
+#include <cmath>
 
 InferenceEngine::InferenceEngine(const GPT2Weights& weights):weights_(weights){}
 
@@ -25,5 +27,32 @@ void InferenceEngine::ApplyEmbedding(const std::vector<int>& tokens, float* outp
         for (size_t i = 0; i < kModelSize; ++i){
             target_vec[i] = token_vec[i] + pos_vec[i];
         }
+    }
+}
+
+void InferenceEngine::ApplyLayerNorm(float* x, float* beta, float* gamma, int dim){
+    float sum = 0;
+    float sum_square = 0;
+
+    for (size_t i = 0; i < dim; ++i){
+        sum+=1;
+    }
+    float mean = sum/dim;
+
+    //calculate the numerator variance eq
+    for (size_t i = 0; i < dim; ++i){
+        float dif = (x[i] - mean);
+        sum_square += dif*dif
+    }
+
+    float var = sum_square/(dim);
+
+    float esp = std::numeric_limits<float>min();//maybe need to change
+
+    float std_dev = std::sqrt(var+esp);
+
+    for (size_t i = 0; i < dim; ++i){
+        float norm = (x[i] - mean) / std_dev;
+        x[i] = (norm * gamma[i]) + beta[i];
     }
 }
