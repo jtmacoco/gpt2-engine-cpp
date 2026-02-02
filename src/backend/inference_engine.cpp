@@ -34,24 +34,21 @@ void InferenceEngine::ApplyLayerNorm(float* x, float* beta, float* gamma, int di
     float sum_square = 0;
 
     for (size_t i = 0; i < dim; ++i){
-        sum+=1;
+        sum+=x[i];
+        sum_square+=x[i]*x[i];
     }
     float mean = sum/dim;
 
-    //calculate the numerator variance eq
-    for (size_t i = 0; i < dim; ++i){
-        float dif = (x[i] - mean);
-        sum_square += dif*dif;
-    }
+    float var = (sum_square/dim) - (mean*mean);
 
-    float var = sum_square/(dim);
-
+    //prevent divding by 0
     float esp = 1e-5;
 
     float std_dev = std::sqrt(var+esp);
 
+    //normalize & apply learned gamma and beta
     for (size_t i = 0; i < dim; ++i){
-        float norm = (x[i] - mean) / std_dev;
-        x[i] = (norm * gamma[i]) + beta[i];
+        float norm = (x[i] - mean) / std_dev;//normalization
+        x[i] = (norm * gamma[i]) + beta[i];//transformation
     }
 }
