@@ -25,10 +25,12 @@ namespace ops{
                 max_val = x[i];
         }
         float sum = 0.0f;
+        //calculate the exp sum
         for (size_t i = 0; i < size; ++i){
             x[i] = expf(x[i]-max_val);
             sum+=x[i];
         }
+        //Normalize Probabilities
         for(size_t i = 0; i < size; ++i) x[i]/=sum;
     }
 }
