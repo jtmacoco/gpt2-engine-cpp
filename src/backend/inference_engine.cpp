@@ -52,3 +52,4 @@ void InferenceEngine::ApplyLayerNorm(float* x, float* beta, float* gamma, int di
         x[i] = (norm * gamma[i]) + beta[i];//transformation
     }
 }
+

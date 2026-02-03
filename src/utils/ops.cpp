@@ -1,5 +1,6 @@
 #include "ops.hpp"
 #include <cstddef>
+#include <cmath>
 namespace ops{
     void MatMul(const float* A, const float* B, float* C, int M, int N, int K, const float* bias){
         for (size_t i = 0; i < M; ++i){
@@ -15,5 +16,19 @@ namespace ops{
                 }//end j loop
             }//end k loop
         }//end i loop
+    }
+    void SoftMax(float* x, int size){
+        float max_val = x[0];
+        //find max value
+        for (size_t i = 1; i < size; ++i){
+            if (x[i] > max_val)
+                max_val = x[i];
+        }
+        float sum = 0.0f;
+        for (size_t i = 0; i < size; ++i){
+            x[i] = expf(x[i]-max_val);
+            sum+=x[i];
+        }
+        for(size_t i = 0; i < size; ++i) x[i]/=sum;
     }
 }
