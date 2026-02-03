@@ -8,7 +8,9 @@ target_sources(${PROJECT_NAME}_run
     main.cpp
     utils/weights_loader.cpp
     utils/tokenizer.cpp
+    utils/ops.cpp
     backend/inference_engine.cpp
+
 )
 
 target_compile_features(${PROJECT_NAME}_run PRIVATE cxx_std_20)

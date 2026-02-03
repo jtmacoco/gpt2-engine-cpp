@@ -1,6 +1,7 @@
 #include "weights_loader.hpp"
 #include "tokenizer.hpp"
 #include "inference_engine.hpp"
+#include "ops.hpp"
 #include <iostream>
 #include <filesystem>
 #include <string>
@@ -37,5 +38,20 @@ int main(int argc, char** argv){
                 kModelSize);
 
     }
+    float A[] = {1.0f, 2.0f, 3.0f};
+    float B[] = {4.0f, 7.0f, 5.0f, 8.0f, 6.0f, 9.0f};
+    int M = 1;
+    int K = 3;
+    int N = 2;
+    float* C = new float[M*N];
+    ops::MatMul(A, B, C, M, N, K);
+
+    for (size_t i = 0; i < K; i++){
+        std::cout << C[i]<< " ";
+    }
+    std::cout<<std::endl;
+
+    //void MatMul(const float* A, const float* B, float* C, int M, int N, int K, const float* bias = nullptr)
+
     return 0;
 }
