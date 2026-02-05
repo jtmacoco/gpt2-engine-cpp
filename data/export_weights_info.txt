@@ -1,0 +1,9 @@
+Exported:
+ - WTE: (50257, 768)
+ - WPE: (1024, 768)
+ - LN1 Gamma: (768,)
+ - LN1 Beta:  (768,)
+ - QKV Weights: (768, 2304)
+ - QKV Bias:    (2304,)
+ - Proj Weights: (768, 768)
+ - Proj Bias:    (768,)

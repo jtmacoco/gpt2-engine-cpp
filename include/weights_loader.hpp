@@ -13,20 +13,62 @@ constexpr int kMaxSequence = 1024;
 struct GPT2Weights{
     float* weight_token_emb;
     float* weight_pos_emb;
+
     float* ln_1_gamma; 
     float* ln_1_beta; 
 
+    float* qkv_weights;
+    float* qkv_bias;
+
+    float* proj_weights;
+    float* proj_bias;
+
+
     //calculate the position of the weights
     void map_from_vector(std::vector<float>& full_blob){
-        weight_token_emb = full_blob.data();
-        weight_pos_emb = weight_token_emb + (kVocabSize * kModelSize);
+        float* ptr = full_blob.data();
 
-        ln_1_gamma = weight_pos_emb + (kMaxSequence * kModelSize);
-        ln_1_beta = ln_1_gamma + kModelSize;
+        weight_token_emb = ptr;
+        ptr += (kVocabSize * kModelSize);
+
+        weight_pos_emb = ptr;
+        ptr += (kMaxSequence * kModelSize);
+
+        ln_1_gamma = ptr;
+        ptr += kModelSize;
+
+        ln_1_beta = ptr;
+        ptr += kModelSize;
+
+        //Attention weights
+        qkv_weights = ptr;
+        ptr += (kModelSize * 3 * kModelSize);
+
+        qkv_bias = ptr;
+        ptr += (3 * kModelSize);
+
+        proj_weights = ptr;
+        ptr += (kModelSize * kModelSize);
+
+        proj_bias = ptr;
+        ptr += kModelSize;
     }
 };
-namespace WeightsLoader{
-    constexpr size_t kTotalElements = (size_t)((kVocabSize + kMaxSequence) * kModelSize) + (2 * kModelSize);
+namespace WeightsLoader {
+    // WTE + WPE
+    constexpr size_t kEmbeddings = (size_t)((kVocabSize + kMaxSequence) * kModelSize);
+
+    // LN1 Gamma + Beta
+    constexpr size_t kLayerNorm = (2 * kModelSize);
+
+    // QKV Weights (768 * 2304) + Bias (2304)
+    constexpr size_t kAttnQKV = (size_t)(kModelSize * 3 * kModelSize) + (3 * kModelSize);
+
+    // Proj Weights (768 * 768) + Bias (768)
+    constexpr size_t kAttnProj = (size_t)(kModelSize * kModelSize) + kModelSize;
+
+    // The Sum of Everything
+    constexpr size_t kTotalElements = kEmbeddings + kLayerNorm + kAttnQKV + kAttnProj;
 
     std::vector<float> load_weights(const std::string file_path);
 };

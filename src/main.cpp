@@ -7,24 +7,25 @@
 #include <string>
 namespace fs = std::filesystem;
 
+
 int main(int argc, char** argv){
     std::string weights_file = "data/gpt2_embeddings.bin";
 
     //contains both positional and token weights
     auto weights = WeightsLoader::load_weights(weights_file);
 
+    GPT2Weights model_weights;
+    model_weights.map_from_vector(weights);
+
     std::string vocab_path  = "data/vocab.json";
     std::string merges_path = "data/merges.txt";
 
     Tokenizer tokenizer(vocab_path,merges_path);
-    
+
     std::string input = "Hello world";
 
     std::vector<int> tokens = tokenizer.Encoder(input);
     int seq_len = tokens.size();
-    GPT2Weights model_weights;
-
-    model_weights.map_from_vector(weights);
     std::vector<float> output_buffer(seq_len * kModelSize);
 
 
