@@ -38,29 +38,5 @@ int main(int argc, char** argv){
                 kModelSize);
 
     }
-    float A[] = {1.0f, 2.0f, 3.0f};
-    float B[] = {4.0f, 7.0f, 5.0f, 8.0f, 6.0f, 9.0f};
-    int M = 1;
-    int K = 3;
-    int N = 2;
-    float* C = new float[M*N];
-    ops::MatMul(A, B, C, M, N, K);
-
-    for (size_t i = 0; i < K; i++){
-        std::cout << C[i]<< " ";
-    }
-    std::cout<<std::endl;
-
-    //void MatMul(const float* A, const float* B, float* C, int M, int N, int K, const float* bias = nullptr)
-
-    std::vector<float> input_test = {1.0f,2.0f,3.0f};
-    ops::SoftMax(input_test.data(), input_test.size());
-    std::cout << "Test 1 (Standard): ";
-    float sum = 0.0f;
-    for (float v : input_test) {
-        std::cout << v << " ";
-        sum += v;
-    }
-    std::cout << "| Sum: " << sum << std::endl;
     return 0;
 }
