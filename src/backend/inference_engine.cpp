@@ -1,4 +1,5 @@
 #include "inference_engine.hpp"
+#include "ops.hpp"
 #include <cmath>
 
 InferenceEngine::InferenceEngine(const GPT2Weights& weights):weights_(weights){}
@@ -53,3 +54,30 @@ void InferenceEngine::ApplyLayerNorm(float* x, float* beta, float* gamma, int di
     }
 }
 
+void InferenceEngine::AttentionLayer(float* input, float* output, int seq_len){
+    float* qkv_w = weights_.qkv_weights;
+    float* qkv_b = weights_.qkv_bias;
+
+    int hidden_dim = kModelSize;//786
+    int qkv_dim = 3 * kModelSize;//2304
+    int num_heads = 12;
+    int head_dim = 64;
+
+    std::vector<float> qkv_buffer(seq_len * qkv_dim);
+    std::vector<float> proj_output(seq_len * hidden_dim);
+
+    std::vector<float> Q(num_heads * seq_len * head_dim);
+    std::vector<float> K(num_heads * seq_len * head_dim);
+    std::vector<float> V(num_heads * seq_len * head_dim);
+
+    ops::MatMul(input,
+            qkv_w,
+            qkv_buffer.data(),
+            seq_len,
+            qkv_dim,
+            hidden_dim,
+            qkv_b);
+    //testing 
+    std::copy(qkv_buffer.begin(), qkv_buffer.end(), output);
+    return;
+}
