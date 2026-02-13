@@ -38,6 +38,7 @@ token_0_data = captured_qkv[0][0].numpy()
 print("\n--- GROUND TRUTH (Python) ---")
 print(f"First 5 values: {token_0_data[:5]}")
 print(f"Last 5 values:  {token_0_data[-5:]}")
-
+# Add to your python script
+print(f"Tokens: {inputs.input_ids.tolist()}")
 # Optional: Save to file if you want to load it in C++ for automated testing
 # token_0_data.tofile("debug_qkv_output.bin")

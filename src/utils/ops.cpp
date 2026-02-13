@@ -3,6 +3,7 @@
 #include <cmath>
 namespace ops{
     void MatMul(const float* A, const float* B, float* C, int M, int N, int K, const float* bias){
+
         for (size_t i = 0; i < M; ++i){
             //init row with bias 
             for (size_t j = 0; j < N; ++j){
@@ -17,6 +18,19 @@ namespace ops{
             }//end k loop
         }//end i loop
     }
+    void MatMulTransposedB(const float* A, const float* B, float* C, int M, int N, int K){
+        for (size_t i = 0; i < M; ++i){
+            //accumulate multiplication
+            for (size_t j = 0; j < N; ++j){
+                float sum = 0.0f;
+                for (size_t k = 0; k < K; ++k){
+                    sum += A[i * K + k] * B[j * K + k];
+                }//end j loop
+                C[i * N + j] = sum;
+            }//end k loop
+        }//end i loop
+    }
+
     void SoftMax(float* x, int size){
         float max_val = x[0];
         //find max value

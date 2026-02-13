@@ -12,6 +12,9 @@ class InferenceEngine{
         void AttentionLayer(float* input,float* output, int seq_len);
 
     private:
+        std::vector<float> qkv_buffer_;
+        std::vector<float> proj_output_;
+        std::vector<float> Q_, K_, V_;
         const GPT2Weights& weights_;
 };
 #endif

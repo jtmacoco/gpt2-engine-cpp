@@ -58,26 +58,103 @@ void InferenceEngine::AttentionLayer(float* input, float* output, int seq_len){
     float* qkv_w = weights_.qkv_weights;
     float* qkv_b = weights_.qkv_bias;
 
-    int hidden_dim = kModelSize;//786
+    int hidden_dim = kModelSize;//786 
     int qkv_dim = 3 * kModelSize;//2304
     int num_heads = 12;
     int head_dim = 64;
 
-    std::vector<float> qkv_buffer(seq_len * qkv_dim);
-    std::vector<float> proj_output(seq_len * hidden_dim);
+    qkv_buffer_.resize(seq_len * qkv_dim);
+    proj_output_.resize(seq_len * hidden_dim);
 
-    std::vector<float> Q(num_heads * seq_len * head_dim);
-    std::vector<float> K(num_heads * seq_len * head_dim);
-    std::vector<float> V(num_heads * seq_len * head_dim);
+    Q_.resize(num_heads * seq_len * head_dim);
+    K_.resize(num_heads * seq_len * head_dim);
+    V_.resize(num_heads * seq_len * head_dim);
 
+    //Fused projection (combines Q, K, V into buffer)
+    //Layout per token in qkv_buffer: [Query (0-767) | Key (768-1535) | Value (1536-2303)]
     ops::MatMul(input,
             qkv_w,
-            qkv_buffer.data(),
+            qkv_buffer_.data(),
             seq_len,
             qkv_dim,
             hidden_dim,
             qkv_b);
-    //testing 
-    std::copy(qkv_buffer.begin(), qkv_buffer.end(), output);
-    return;
+    //iterate & unfuse data into vectors
+    for (size_t s = 0; s < seq_len; ++s){
+        for (size_t h = 0; h < num_heads; ++h){
+            for(size_t d = 0; d < head_dim; ++d){
+
+                //Source index in qkv_buffer (fused layout so linear)
+                //Each token has 3 * hidden_dim values 
+                int src_idx = s * (3 * hidden_dim) + (h * head_dim + d);
+
+                //Destination index where it ends
+                //[Head, Sequence, Dimension]
+                int dst_idx = h * (seq_len * head_dim) + s * head_dim + d;
+
+                Q_[dst_idx] = qkv_buffer_[src_idx];
+                K_[dst_idx] = qkv_buffer_[src_idx + hidden_dim];
+                V_[dst_idx] = qkv_buffer_[src_idx + (hidden_dim * 2)];
+            }//end for d
+        }//end for h
+    }//end for s
+    std::vector<float> scores(num_heads * seq_len * seq_len);
+    std::vector<float> context_layer(num_heads * seq_len * head_dim);
+    float scale = 1.0f / sqrtf(head_dim);
+
+    for (size_t h = 0; h < num_heads; ++h){
+        float* q_head = Q_.data() + (h * seq_len * head_dim);
+        float* k_head = K_.data() + (h * seq_len * head_dim);
+        float* v_head = V_.data() + (h * seq_len * head_dim);
+
+        float* score_head = scores.data() + (h* seq_len * seq_len);
+        float* context_head = context_layer.data() + (h * seq_len * head_dim);
+
+        ops::MatMulTransposedB(q_head, k_head, score_head, seq_len, seq_len, head_dim);
+
+        for (size_t i = 0; i < seq_len; ++i){
+            float max_val = -1e9f;
+
+            for (size_t j = 0; j < seq_len; ++j){
+                if (j > i){
+                    score_head[i * seq_len + j] = -1e9f;
+                } else{
+                    score_head[i * seq_len + j] *= scale; 
+                }
+                if (score_head[i * seq_len + j] > max_val){
+                    max_val = score_head[i * seq_len + j];
+                }
+            }//end j loop
+
+            float sum_exp = 0.0f;
+            for (size_t j = 0; j < seq_len; ++j){
+                float exp_val = expf(score_head[i * seq_len + j] - max_val);
+                score_head[i * seq_len + j] = exp_val;
+                sum_exp += exp_val;
+            }//end j loop
+
+            for (size_t j = 0; j < seq_len; ++j){
+                score_head[i * seq_len + j] /= sum_exp;
+            }//end j loop
+        }// end i loop 
+        ops::MatMul(score_head, v_head, context_head, seq_len, head_dim, seq_len, nullptr);
+    }// end h loop
+    for (size_t s = 0; s < seq_len; ++s){
+        for (size_t h = 0; h < num_heads; ++h){
+            int src_offset = h * (seq_len * head_dim) + (s * head_dim);
+            int dst_offset = s * (num_heads * head_dim) + (h * head_dim);
+
+            float* src_ptr = context_layer.data() + src_offset;
+            float* dst_ptr = proj_output_.data() + dst_offset;
+
+            std::copy(src_ptr, src_ptr + head_dim, dst_ptr);
+        }//end h loop
+    }//end s loop
+    ops::MatMul(proj_output_.data(),
+                weights_.proj_weights,
+                output,
+                seq_len,
+                hidden_dim,
+                hidden_dim,
+                weights_.proj_bias);
 }
