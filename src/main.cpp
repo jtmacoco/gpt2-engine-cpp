@@ -33,10 +33,6 @@ int main(int argc, char** argv){
     InferenceEngine inference_engine(model_weights);
     inference_engine.ApplyEmbedding(tokens,input_buffer.data());
 
-    std::cout << "--- Embeddings (First 5) ---" << std::endl;
-    for(int i = 0 ; i < 5; ++i) std::cout<< input_buffer[i] << " ";
-    std::cout << std::endl;
-
     std::copy(input_buffer.begin(), input_buffer.end(), ln_buffer.begin());
     for (size_t i = 0; i < seq_len; ++i){
         float* current_token_vec = ln_buffer.data() + (i * kModelSize);
@@ -63,3 +59,4 @@ int main(int argc, char** argv){
 
     return 0;
 }
+

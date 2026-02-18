@@ -158,3 +158,4 @@ void InferenceEngine::AttentionLayer(float* input, float* output, int seq_len){
                 hidden_dim,
                 weights_.proj_bias);
 }
+

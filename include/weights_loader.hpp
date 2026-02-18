@@ -9,6 +9,7 @@
 constexpr int kVocabSize   = 50257;
 constexpr int kModelSize   = 768;
 constexpr int kMaxSequence = 1024;
+constexpr int kFFNSize = 4 * kModelSize; // 768 * 4 = 3072
 
 struct GPT2Weights{
     float* weight_token_emb;
@@ -23,7 +24,14 @@ struct GPT2Weights{
     float* proj_weights;
     float* proj_bias;
 
+    float* ln_2_gamma; 
+    float* ln_2_beta; 
 
+    float* fc_weights;
+    float* fc_bias;
+
+    float* proj_weights2;
+    float* proj_bias2;
     //calculate the position of the weights
     void map_from_vector(std::vector<float>& full_blob){
         float* ptr = full_blob.data();
@@ -52,6 +60,25 @@ struct GPT2Weights{
 
         proj_bias = ptr;
         ptr += kModelSize;
+
+        ln_2_gamma = ptr;
+        ptr += kModelSize;
+
+        ln_2_beta = ptr;
+        ptr += kModelSize;
+
+        fc_weights = ptr;
+        ptr += (kModelSize + kFFNSize);
+
+        fc_bias = ptr;
+        ptr += kFFNSize;
+
+        proj_weights2 = ptr;
+        ptr += (kModelSize + kFFNSize);
+
+        proj_bias2 = ptr;
+        ptr += kModelSize;
+
     }
 };
 namespace WeightsLoader {
@@ -67,8 +94,11 @@ namespace WeightsLoader {
     // Proj Weights (768 * 768) + Bias (768)
     constexpr size_t kAttnProj = (size_t)(kModelSize * kModelSize) + kModelSize;
 
+    //MLP/FFN elements
+    constexpr size_t kFFN = (size_t)(kModelSize * kFFNSize) + kFFNSize + (kFFNSize * kModelSize) + kModelSize;
+
     // The Sum of Everything
-    constexpr size_t kTotalElements = kEmbeddings + kLayerNorm + kAttnQKV + kAttnProj;
+    constexpr size_t kTotalElements = kEmbeddings + kLayerNorm + kAttnQKV + kAttnProj + kFFN;
 
     std::vector<float> load_weights(const std::string file_path);
 };
