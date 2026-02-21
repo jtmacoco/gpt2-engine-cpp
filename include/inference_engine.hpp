@@ -9,8 +9,9 @@ class InferenceEngine{
         InferenceEngine(const GPT2Weights& weights);
         void ApplyEmbedding(const std::vector<int>& tokens, float* output_buffer);
         void ApplyLayerNorm(float* x, float* beta, float* gamma, int dim);
-        void AttentionLayer(float* input,float* output, int seq_len);
-        void FeedForwardLayer(float* input, float* output, float* buffer, int seq_len);
+
+        void AttentionLayer(float* input,float* output, int seq_len, int layer_idx);
+        void FeedForwardLayer(float* input, float* output, float* buffer, int seq_len, int layer_idx);
 
     private:
         std::vector<float> qkv_buffer_;

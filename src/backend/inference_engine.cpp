@@ -30,6 +30,7 @@ void InferenceEngine::ApplyEmbedding(const std::vector<int>& tokens, float* outp
     }
 }
 
+/*
 void InferenceEngine::ApplyLayerNorm(float* x, float* beta, float* gamma, int dim){
     float sum = 0;
     float sum_square = 0;
@@ -53,10 +54,36 @@ void InferenceEngine::ApplyLayerNorm(float* x, float* beta, float* gamma, int di
         x[i] = (norm * gamma[i]) + beta[i];//transformation
     }
 }
+*/
+void InferenceEngine::ApplyLayerNorm(float* x, float* beta, float* gamma, int dim){
+    // Pass 1: Get the mean
+    float sum = 0.0f;
+    for (size_t i = 0; i < dim; ++i){
+        sum += x[i];
+    }
+    float mean = sum / dim;
 
-void InferenceEngine::AttentionLayer(float* input, float* output, int seq_len){
-    float* qkv_w = weights_.qkv_weights;
-    float* qkv_b = weights_.qkv_bias;
+    // Pass 2: Get the stable variance
+    float var_sum = 0.0f;
+    for (size_t i = 0; i < dim; ++i){
+        float diff = x[i] - mean;
+        var_sum += diff * diff;
+    }
+    float var = var_sum / dim;
+
+    float eps = 1e-5f;
+    float std_dev = std::sqrt(var + eps);
+
+    // Normalize & apply learned gamma and beta
+    for (size_t i = 0; i < dim; ++i){
+        float norm = (x[i] - mean) / std_dev;
+        x[i] = (norm * gamma[i]) + beta[i];
+    }
+}
+
+void InferenceEngine::AttentionLayer(float* input, float* output, int seq_len, int layer_idx){
+    float* qkv_w = weights_.layers[layer_idx].qkv_weights;
+    float* qkv_b = weights_.layers[layer_idx].qkv_bias;
 
     int hidden_dim = kModelSize;//786 
     int qkv_dim = 3 * kModelSize;//2304
@@ -152,19 +179,19 @@ void InferenceEngine::AttentionLayer(float* input, float* output, int seq_len){
         }//end h loop
     }//end s loop
     ops::MatMul(proj_output_.data(),
-                weights_.proj_weights,
+                weights_.layers[layer_idx].proj_weights,
                 output,
                 seq_len,
                 hidden_dim,
                 hidden_dim,
-                weights_.proj_bias);
+                weights_.layers[layer_idx].proj_bias);
 }
 
-void InferenceEngine::FeedForwardLayer(float* input, float* output, float* buffer, int seq_len){
-    float* fc_w   = weights_.fc_weights;
-    float* fc_b   = weights_.fc_bias;
-    float* proj_w = weights_.proj_weights2;
-    float* proj_b = weights_.proj_bias2;
+void InferenceEngine::FeedForwardLayer(float* input, float* output, float* buffer, int seq_len, int layer_idx){
+    float* fc_w   = weights_.layers[layer_idx].fc_weights;
+    float* fc_b   = weights_.layers[layer_idx].fc_bias;
+    float* proj_w = weights_.layers[layer_idx].proj_weights2;
+    float* proj_b = weights_.layers[layer_idx].proj_bias2;
 
     int d_ff = kModelSize * 4;// 768 * 4
     //Up projection 
