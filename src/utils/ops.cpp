@@ -22,11 +22,7 @@ namespace ops{
         for (size_t i = 0; i < M; ++i){
             //accumulate multiplication
             for (size_t j = 0; j < N; ++j){
-                float sum = 0.0f;
-                for (size_t k = 0; k < K; ++k){
-                    sum += A[i * K + k] * B[j * K + k];
-                }//end j loop
-                C[i * N + j] = sum;
+                C[i * N + j] = DotProd(&A[i * K], &B[j * K], K);
             }//end k loop
         }//end i loop
     }
@@ -47,7 +43,7 @@ namespace ops{
         //Normalize Probabilities
         for(size_t i = 0; i < size; ++i) x[i]/=sum;
     }
-    float DotProd(float* A, float* B, int length){
+    float DotProd(const float* A, const float* B, int length){
         float sum = 0.0f;
         for (size_t i = 0; i < length; ++i){
             sum+= A[i] * B[i];

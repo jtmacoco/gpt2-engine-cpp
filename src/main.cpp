@@ -42,21 +42,34 @@ int main(int argc, char** argv){
                 kModelSize);
 
     }
-    std::cout << "--- LN Output (First 5) ---" << std::endl;
-    for(int i=0; i<5; ++i) std::cout << ln_buffer[i] << " ";
-    std::cout << std::endl;
     inference_engine.AttentionLayer(
             ln_buffer.data(),
             attention_output.data(),
             seq_len
             );
-    std::cout << "--- Attention Output (First 10 values) ---" << std::endl;
-    std::cout << std::fixed << std::setprecision(6); // Show 6 decimal places
-    for (int i = 0; i < 10; ++i) {
-        std::cout << attention_output[i] << " ";
+    for (size_t i = 0; i < seq_len * kModelSize; ++i){
+        input_buffer[i] += attention_output[i];
     }
-    std::cout << std::endl;
 
+    std::copy(input_buffer.begin(), input_buffer.end(), ln_buffer.begin());
+    for (size_t i = 0; i < seq_len; ++i){
+        float* current_vec = input_buffer.data() + (i * kModelSize);
+        inference_engine.ApplyLayerNorm(current_vec,
+                model_weights.ln_2_beta,
+                model_weights.ln_2_gamma,
+                kModelSize);
+    }
+    std::vector<float> ff_output(seq_len* kModelSize);
+    std::vector<float> ff_buffer(seq_len * kModelSize * 4);
+
+    inference_engine.FeedForwardLayer(
+            ln_buffer.data(),
+            ff_output.data(),
+            ff_buffer.data(),
+            seq_len
+            );
+    for (size_t i = 0; i < seq_len * kModelSize; ++i){
+        input_buffer[i] += ff_output[i];
+    }
     return 0;
 }
-

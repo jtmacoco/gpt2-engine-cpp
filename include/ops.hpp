@@ -5,5 +5,5 @@ namespace ops{
                 int M, int N, int K);
 
     void SoftMax(float *x, int size);
-    float DotProd(float* A, float* B, int length);
+    float DotProd(const float* A, const float* B, int length);
 }

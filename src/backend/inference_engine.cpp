@@ -79,7 +79,7 @@ void InferenceEngine::AttentionLayer(float* input, float* output, int seq_len){
             qkv_dim,
             hidden_dim,
             qkv_b);
-    //iterate & unfuse data into vectors
+    //Iterate & unfuse data into vectors
     for (size_t s = 0; s < seq_len; ++s){
         for (size_t h = 0; h < num_heads; ++h){
             for(size_t d = 0; d < head_dim; ++d){
@@ -103,6 +103,7 @@ void InferenceEngine::AttentionLayer(float* input, float* output, int seq_len){
     float scale = 1.0f / sqrtf(head_dim);
 
     for (size_t h = 0; h < num_heads; ++h){
+        //Unpack the qkv data 
         float* q_head = Q_.data() + (h * seq_len * head_dim);
         float* k_head = K_.data() + (h * seq_len * head_dim);
         float* v_head = V_.data() + (h * seq_len * head_dim);
@@ -135,7 +136,7 @@ void InferenceEngine::AttentionLayer(float* input, float* output, int seq_len){
 
             for (size_t j = 0; j < seq_len; ++j){
                 score_head[i * seq_len + j] /= sum_exp;
-            }//end j loop
+            }// end j loop
         }// end i loop 
         ops::MatMul(score_head, v_head, context_head, seq_len, head_dim, seq_len, nullptr);
     }// end h loop
@@ -159,3 +160,23 @@ void InferenceEngine::AttentionLayer(float* input, float* output, int seq_len){
                 weights_.proj_bias);
 }
 
+void InferenceEngine::FeedForwardLayer(float* input, float* output, float* buffer, int seq_len){
+    float* fc_w   = weights_.fc_weights;
+    float* fc_b   = weights_.fc_bias;
+    float* proj_w = weights_.proj_weights2;
+    float* proj_b = weights_.proj_bias2;
+
+    int d_ff = kModelSize * 4;// 768 * 4
+    //Up projection 
+    ops::MatMul(input, fc_w, buffer, seq_len, d_ff, kModelSize, fc_b);
+    int buffer_size = seq_len * d_ff;
+    //GELU activation
+    for(size_t i = 0; i < buffer_size; ++i){
+        float x = buffer[i];
+        float x_cubed = x * x * x;
+        float inner = 0.7978845608f * (x + 0.044715f * x_cubed);
+        buffer[i] = 0.5f * x * (1.0f + std::tanh(inner));
+    }
+    //Down projection
+    ops::MatMul(buffer, proj_w, output, seq_len, kModelSize, d_ff, proj_b);
+}

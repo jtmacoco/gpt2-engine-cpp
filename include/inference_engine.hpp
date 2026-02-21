@@ -10,6 +10,7 @@ class InferenceEngine{
         void ApplyEmbedding(const std::vector<int>& tokens, float* output_buffer);
         void ApplyLayerNorm(float* x, float* beta, float* gamma, int dim);
         void AttentionLayer(float* input,float* output, int seq_len);
+        void FeedForwardLayer(float* input, float* output, float* buffer, int seq_len);
 
     private:
         std::vector<float> qkv_buffer_;

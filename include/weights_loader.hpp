@@ -1,6 +1,5 @@
 #ifndef WEIGHTS_LOADER_HPP
 #define WEIGHTS_LOADER_HPP
-
 #include <vector>
 #include <string>
 
@@ -86,16 +85,16 @@ namespace WeightsLoader {
     constexpr size_t kEmbeddings = (size_t)((kVocabSize + kMaxSequence) * kModelSize);
 
     // LN1 Gamma + Beta
-    constexpr size_t kLayerNorm = (2 * kModelSize);
+    constexpr size_t kLayerNorm  = (2 * kModelSize);
 
     // QKV Weights (768 * 2304) + Bias (2304)
-    constexpr size_t kAttnQKV = (size_t)(kModelSize * 3 * kModelSize) + (3 * kModelSize);
+    constexpr size_t kAttnQKV    = (size_t)(kModelSize * 3 * kModelSize) + (3 * kModelSize);
 
     // Proj Weights (768 * 768) + Bias (768)
-    constexpr size_t kAttnProj = (size_t)(kModelSize * kModelSize) + kModelSize;
+    constexpr size_t kAttnProj   = (size_t)(kModelSize * kModelSize) + kModelSize;
 
     //MLP/FFN elements
-    constexpr size_t kFFN = (size_t)(kModelSize * kFFNSize) + kFFNSize + (kFFNSize * kModelSize) + kModelSize;
+    constexpr size_t kFFN        = (size_t)(kModelSize * kFFNSize) + kFFNSize + (kFFNSize * kModelSize) + kModelSize;
 
     // The Sum of Everything
     constexpr size_t kTotalElements = kEmbeddings + kLayerNorm + kAttnQKV + kAttnProj + kFFN;
