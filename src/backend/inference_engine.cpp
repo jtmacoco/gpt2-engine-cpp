@@ -30,7 +30,6 @@ void InferenceEngine::ApplyEmbedding(const std::vector<int>& tokens, float* outp
     }
 }
 
-/*
 void InferenceEngine::ApplyLayerNorm(float* x, float* beta, float* gamma, int dim){
     float sum = 0;
     float sum_square = 0;
@@ -54,33 +53,6 @@ void InferenceEngine::ApplyLayerNorm(float* x, float* beta, float* gamma, int di
         x[i] = (norm * gamma[i]) + beta[i];//transformation
     }
 }
-*/
-void InferenceEngine::ApplyLayerNorm(float* x, float* beta, float* gamma, int dim){
-    // Pass 1: Get the mean
-    float sum = 0.0f;
-    for (size_t i = 0; i < dim; ++i){
-        sum += x[i];
-    }
-    float mean = sum / dim;
-
-    // Pass 2: Get the stable variance
-    float var_sum = 0.0f;
-    for (size_t i = 0; i < dim; ++i){
-        float diff = x[i] - mean;
-        var_sum += diff * diff;
-    }
-    float var = var_sum / dim;
-
-    float eps = 1e-5f;
-    float std_dev = std::sqrt(var + eps);
-
-    // Normalize & apply learned gamma and beta
-    for (size_t i = 0; i < dim; ++i){
-        float norm = (x[i] - mean) / std_dev;
-        x[i] = (norm * gamma[i]) + beta[i];
-    }
-}
-
 void InferenceEngine::AttentionLayer(float* input, float* output, int seq_len, int layer_idx){
     float* qkv_w = weights_.layers[layer_idx].qkv_weights;
     float* qkv_b = weights_.layers[layer_idx].qkv_bias;
