@@ -2,6 +2,7 @@ myvenv/
 outline.md
 tags
 .ctags
+*sandbox.cu
 
 #Ignore data
 gpt2_embeddings.bin
