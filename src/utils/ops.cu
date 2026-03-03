@@ -16,7 +16,7 @@ namespace ops{
     }
     void MatMul(cublasHandle_t handle, const float* d_A, const float* d_B, float* d_C, int M, int N, int K, const float* d_bias){
         const float alpha = 1.0f;
-        const float beta = 0.0f;
+        const float beta  = 0.0f;
 
         cublasStatus_t status = cublasSgemm(
                 handle,
@@ -36,7 +36,7 @@ namespace ops{
         );
 
         if (status != CUBLAS_STATUS_SUCCESS)
-            std::cerr << "cuBLass failed bro" << std::endl;
+            std::cerr << "cuBLass matrix mult failed" << std::endl;
 
         if (d_bias != nullptr){
             int total_elements = M * N;
@@ -46,14 +46,29 @@ namespace ops{
             cudaDeviceSynchronize();
         }
     }
-    void MatMulTransposedB(cublasHandle_t handle, const float* A, const float* B, float* C, int M, int N, int K){
-        for (size_t i = 0; i < M; ++i){
-            //accumulate multiplication
-            for (size_t j = 0; j < N; ++j){
-                C[i * N + j] = DotProd(&A[i * K], &B[j * K], K);
-            }//end k loop
-        }//end i loop
-    }
+    void MatMulTransposedB(cublasHandle_t handle, const float* d_A, const float* d_B, float* d_C, int M, int N, int K){
+        const float alpha = 1.0f;
+        const float beta  = 0.0f;
+        cublasStatus_t status = cublasSgemm(
+                handle,
+                CUBLAS_OP_T,
+                CUBLAS_OP_N,
+                N,
+                M,
+                K,
+                &alpha,
+                d_B,
+                K,
+                d_A,
+                K,
+                &beta,
+                d_C,
+                N
+                );
+        if (status != CUBLAS_STATUS_SUCCESS){
+            std::cerr << "cuBLASS Transpose error" << std::endl;
+        }
+     }
 
     void SoftMax(float* x, int size){
         float max_val = x[0];
