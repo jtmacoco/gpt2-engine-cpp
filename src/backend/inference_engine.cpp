@@ -113,29 +113,14 @@ void InferenceEngine::AttentionLayer(float* input, float* output, int seq_len, i
         ops::MatMulTransposedB(q_head, k_head, score_head, seq_len, seq_len, head_dim);
 
         for (size_t i = 0; i < seq_len; ++i){
-            float max_val = -1e9f;
-
             for (size_t j = 0; j < seq_len; ++j){
                 if (j > i){
                     score_head[i * seq_len + j] = -1e9f;
                 } else{
                     score_head[i * seq_len + j] *= scale; 
                 }
-                if (score_head[i * seq_len + j] > max_val){
-                    max_val = score_head[i * seq_len + j];
-                }
             }//end j loop
-
-            float sum_exp = 0.0f;
-            for (size_t j = 0; j < seq_len; ++j){
-                float exp_val = expf(score_head[i * seq_len + j] - max_val);
-                score_head[i * seq_len + j] = exp_val;
-                sum_exp += exp_val;
-            }//end j loop
-
-            for (size_t j = 0; j < seq_len; ++j){
-                score_head[i * seq_len + j] /= sum_exp;
-            }// end j loop
+            ops::SoftMax(&score_head[i * seq_len], seq_len);
         }// end i loop 
         ops::MatMul(score_head, v_head, context_head, seq_len, head_dim, seq_len, nullptr);
     }// end h loop
