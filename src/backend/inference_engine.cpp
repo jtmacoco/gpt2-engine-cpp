@@ -164,3 +164,5 @@ void InferenceEngine::FeedForwardLayer(float* input, float* output, float* buffe
     //Down projection
     ops::MatMul(buffer, proj_w, output, seq_len, kModelSize, d_ff, proj_b);
 }
+
+InferenceEngine::~InferenceEngine(){}

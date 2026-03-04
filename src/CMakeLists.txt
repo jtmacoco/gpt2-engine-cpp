@@ -19,7 +19,8 @@ add_executable(${PROJECT_NAME}_cpu
 
 #Cuda target
 add_executable(${PROJECT_NAME}_cuda
-        sandbox.cu
+        main.cu
+        backend/inference_engine.cu
         ${CUDA_UTILS}
         
 )
