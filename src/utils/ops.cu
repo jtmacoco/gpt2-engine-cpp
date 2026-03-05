@@ -282,6 +282,7 @@ void ApplyEmbedding(const int* d_tokens, const float* d_token_emb, const float* 
         int blocks = (total_elements + threads - 1) / threads;
         EmbeddingKernel<<<blocks, threads>>>(d_tokens, d_token_emb, d_pos_emb, d_output, seq_len, hidden_dim);
     }
+
     void SoftMax(float* x, int size){
         float max_val = x[0];
         //find max value

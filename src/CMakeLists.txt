@@ -1,36 +1,23 @@
-#Common files
-set(COMMON_UTILS
+add_library(gpt2_cpu_core STATIC
     utils/weights_loader.cpp
     utils/tokenizer.cpp
     utils/ops.cpp
+    backend/inference_engine.cpp
 )
-set(CUDA_UTILS
-        utils/weights_loader.cpp
-        utils/tokenizer.cpp
-        utils/ops.cu
+target_include_directories(gpt2_cpu_core PUBLIC ${PROJECT_SOURCE_DIR}/include)
+
+add_library(gpt2_cuda_core STATIC
+    utils/weights_loader.cpp
+    utils/tokenizer.cpp
+    utils/ops.cu
+    backend/inference_engine.cu
 )
+target_include_directories(gpt2_cuda_core PUBLIC ${PROJECT_SOURCE_DIR}/include)
+target_compile_definitions(gpt2_cuda_core PUBLIC USE_CUDA)
+target_link_libraries(gpt2_cuda_core PUBLIC CUDA::cublas CUDA::cudart)
 
-#CPU target
-add_executable(${PROJECT_NAME}_cpu
-        main.cpp
-        backend/inference_engine.cpp
-        ${COMMON_UTILS}
-)
+add_executable(${PROJECT_NAME}_cpu main.cpp)
+target_link_libraries(${PROJECT_NAME}_cpu PRIVATE gpt2_cpu_core)
 
-#Cuda target
-add_executable(${PROJECT_NAME}_cuda
-        main.cu
-        backend/inference_engine.cu
-        ${CUDA_UTILS}
-        
-)
-
-target_compile_features(${PROJECT_NAME}_cpu PRIVATE cxx_std_20)
-target_include_directories(${PROJECT_NAME}_cpu PRIVATE ${PROJECT_SOURCE_DIR}/include)
-target_compile_definitions(${PROJECT_NAME}_cuda PRIVATE USE_CUDA)
-target_link_libraries(${PROJECT_NAME}_cuda PRIVATE CUDA::cublas CUDA::cudart)
-
-
-target_compile_features(${PROJECT_NAME}_cuda PRIVATE cxx_std_20)
-target_include_directories(${PROJECT_NAME}_cuda PRIVATE ${PROJECT_SOURCE_DIR}/include)
-target_compile_definitions(${PROJECT_NAME}_cuda PRIVATE USE_CUDA)
+add_executable(${PROJECT_NAME}_cuda main.cu)
+target_link_libraries(${PROJECT_NAME}_cuda PRIVATE gpt2_cuda_core)
