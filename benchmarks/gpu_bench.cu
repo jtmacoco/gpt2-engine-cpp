@@ -19,7 +19,7 @@ int main() {
     Tokenizer tokenizer(vocab_path, merges_path);
 
     std::string input = "The quick brown fox jumps over the lazy dog and runs into the forest";
-    int tokens_to_generate = 100;
+    int tokens_to_generate = 20;
 
     std::vector<int> tokens = tokenizer.Encoder(input);
     int initial_prompt_size = tokens.size();
