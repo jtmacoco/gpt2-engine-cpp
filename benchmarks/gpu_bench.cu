@@ -19,7 +19,7 @@ int main() {
     Tokenizer tokenizer(vocab_path, merges_path);
 
     std::string input = "The quick brown fox jumps over the lazy dog and runs into the forest";
-    int tokens_to_generate = 20;
+    int tokens_to_generate = 2;
 
     std::vector<int> tokens = tokenizer.Encoder(input);
     int initial_prompt_size = tokens.size();
@@ -100,10 +100,10 @@ int main() {
     float seconds = milliseconds / 1000.0f;
     float tokens_per_second = generated_tokens / seconds;
 
-    std::cout << "Total execution time: " << seconds << " seconds" << std::endl;
-    std::cout << "Tokens generated:     " << generated_tokens << std::endl;
-    std::cout << "Throughput:           " << std::fixed << std::setprecision(2) << tokens_per_second << " tok/s" << std::endl;
-    std::cout << "Avg time per token:   " << (milliseconds / generated_tokens) << " ms/tok" << std::endl;
+    //std::cout << "Total execution time: " << seconds << " seconds" << std::endl;
+    //std::cout << "Tokens generated:     " << generated_tokens << std::endl;
+    //std::cout << "Throughput:           " << std::fixed << std::setprecision(2) << tokens_per_second << " tok/s" << std::endl;
+    //std::cout << "Avg time per token:   " << (milliseconds / generated_tokens) << " ms/tok" << std::endl;
 
     // Cleanup
     cudaFree(d_tokens); cudaFree(d_input_buffer); cudaFree(d_ln_buffer);
