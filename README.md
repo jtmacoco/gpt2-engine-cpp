@@ -20,9 +20,9 @@ GPT2 (124M parameter) architecture.
 `./build/benchmarks/gpu_bench`
 
 # Key Features
-- Custom CUDA Kernels: Impelmented custom multi-had attention, layer normalization, GELU activation, and fues matrix operations (only using cuBLAS)
+- Custom CUDA Kernels: Implemented custom multi-head attention, layer normalization, GELU activation, and fuesed matrix operations (only using cuBLAS)
 - Cross-Framework Validation: Features and end to end python validation suite guarantees mathemematically identical output to huggingface version
-- Deterministic: Can handle percise floating point arithmetic stability across matrix operations
+- Deterministic: Can handle precise floating point arithmetic stability across matrix operations
 
 # Validation & Performance
 - **Mathematical Correctness:** Achieved a Mean Squared Error (MSE) of effectively `0.0` and a Maximum Absolute Difference of `< 1e-3` in FP32 logit outputs compared to PyTorch's `F.scaled_dot_product_attention`.
