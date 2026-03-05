@@ -1,0 +1,17 @@
+----------50 Tokens-------------------
+Total execution time: 379.729 seconds
+Tokens generated:     50
+Throughput:           0.13 tok/s
+Avg time per token:   7594.57 ms/tok
+
+----------30 Tokens-------------------
+Total execution time: 167.976 seconds
+Tokens generated:     30
+Throughput:           0.18 tok/s
+Avg time per token:   5599.20 ms/tok
+
+----------20 Tokens-------------------
+Total execution time: 94.6304 seconds
+Tokens generated:     20
+Throughput:           0.21 tok/s
+Avg time per token:   4731.52 ms/tok

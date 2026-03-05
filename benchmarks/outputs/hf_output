@@ -1,0 +1,63 @@
+-------------CUDA--------------------
+
+----------100 Tokens-----------------
+Total execution time: 0.6810 seconds
+Tokens generated:     100
+Throughput:           146.83 tok/s
+Avg time per token:   6.81 ms/tok
+
+----------80 Tokens------------------
+Total execution time: 0.5443 seconds
+Tokens generated:     80
+Throughput:           146.99 tok/s
+Avg time per token:   6.80 ms/tok
+
+----------50 Tokens------------------
+Total execution time: 0.3923 seconds
+Tokens generated:     50
+Throughput:           127.45 tok/s
+Avg time per token:   7.85 ms/tok
+
+----------30 Tokens------------------
+Total execution time: 0.3128 seconds
+Tokens generated:     30
+Throughput:           95.92 tok/s
+Avg time per token:   10.43 ms/tok
+
+----------20 Tokens------------------
+Total execution time: 0.4541 seconds
+Tokens generated:     20
+Throughput:           44.05 tok/s
+Avg time per token:   22.70 ms/tok
+
+---------------CPU--------------------
+
+----------100 Tokens------------------
+Total execution time: 5.6141 seconds
+Tokens generated:     100
+Throughput:           17.81 tok/s
+Avg time per token:   56.14 ms/tok
+
+----------80 Tokens------------------
+Total execution time: 4.3178 seconds
+Tokens generated:     80
+Throughput:           18.53 tok/s
+Avg time per token:   53.97 ms/tok
+
+----------50 Tokens------------------
+Total execution time: 2.4559 seconds
+Tokens generated:     50
+Throughput:           20.36 tok/s
+Avg time per token:   49.12 ms/tok
+
+----------30 Tokens------------------
+Total execution time: 1.4204 seconds
+Tokens generated:     30
+Throughput:           21.12 tok/s
+Avg time per token:   47.35 ms/tok
+
+----------20 Tokens------------------
+Total execution time: 0.9423 seconds
+Tokens generated:     20
+Throughput:           21.22 tok/s
+Avg time per token:   47.11 ms/tok
