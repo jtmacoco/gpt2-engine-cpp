@@ -29,6 +29,7 @@ int main(int argc, char** argv){
     std::vector<int> tokens = tokenizer.Encoder(input);
     std::cout<< "Input: " << input <<std::endl;
     std::vector<int> output_tokens;
+        InferenceEngine inference_engine(model_weights);
     while (generated_count < max_tokens_to_generate){
         int seq_len = tokens.size();
         std::vector<float> input_buffer(seq_len * kModelSize);
@@ -37,7 +38,7 @@ int main(int argc, char** argv){
         std::vector<float> ff_output(seq_len * kModelSize);
         std::vector<float> ff_buffer(seq_len * kModelSize * 4);
 
-        InferenceEngine inference_engine(model_weights);
+        //InferenceEngine inference_engine(model_weights);
         inference_engine.ApplyEmbedding(tokens,input_buffer.data());
 
         for (size_t layer_idx = 0; layer_idx < kNumLayers; ++layer_idx){
