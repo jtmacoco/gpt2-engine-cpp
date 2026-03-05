@@ -19,7 +19,7 @@ int main() {
     Tokenizer tokenizer(vocab_path, merges_path);
 
     std::string input = "The quick brown fox jumps over the lazy dog and runs into the forest";
-    int tokens_to_generate = 20;
+    int tokens_to_generate = 2;
     int generated_count = 0;
 
     std::vector<int> tokens = tokenizer.Encoder(input);
@@ -97,10 +97,10 @@ int main() {
     double seconds = duration.count();
     double tokens_per_second = generated_tokens / seconds;
 
-    std::cout << "Total execution time: " << seconds << " seconds" << std::endl;
-    std::cout << "Tokens generated:     " << generated_tokens << std::endl;
-    std::cout << "Throughput:           " << std::fixed << std::setprecision(2) << tokens_per_second << " tok/s" << std::endl;
-    std::cout << "Avg time per token:   " << (seconds * 1000.0 / generated_tokens) << " ms/tok" << std::endl;
+    //std::cout << "Total execution time: " << seconds << " seconds" << std::endl;
+    //std::cout << "Tokens generated:     " << generated_tokens << std::endl;
+    //std::cout << "Throughput:           " << std::fixed << std::setprecision(2) << tokens_per_second << " tok/s" << std::endl;
+    //std::cout << "Avg time per token:   " << (seconds * 1000.0 / generated_tokens) << " ms/tok" << std::endl;
 
     return 0;
 }
