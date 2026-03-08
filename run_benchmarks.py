@@ -6,8 +6,8 @@ from pathlib import Path
 
 # Configuration
 EXECUTABLE = "./build/benchmarks/gpu_bench"
-#TOKEN_SIZES = [20, 50, 100, 200, 300, 500, 700, 800, 900, 1000]
-TOKEN_SIZES = [1, 2, 5, 10, 15, 20]
+TOKEN_SIZES = [1, 2, 5, 10, 20, 30, 50, 100, 200, 300, 500, 700, 800, 900, 1000]
+#TOKEN_SIZES = [1, 2, 5, 10, 15, 20, 30, 50]
 
 # Match a markdown table data row:
 # | Tokens | TTFT | TPOT | Total | Throughput |
@@ -104,7 +104,7 @@ def main():
 
     out_dir = Path("./benchmarks/gpu_benchmarks")
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / "benchmark_results_kv.png"
+    out_path = out_dir / "benchmark_results_gpu.png"
     plt.savefig(out_path, dpi=300)
     print(f"\nGraphs saved to '{out_path}'")
 
