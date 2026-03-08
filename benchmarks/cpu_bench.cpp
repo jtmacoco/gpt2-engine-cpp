@@ -9,7 +9,7 @@
 #include <vector>
 #include <string>
 
-int main() {
+int main(int argc, char** argv) {
     std::string weights_file = "data/gpt2_embeddings.bin";
     auto weights = WeightsLoader::load_weights(weights_file);
     GPT2Weights model_weights;
@@ -21,6 +21,9 @@ int main() {
 
     std::string input = "The quick brown fox jumps over the lazy dog and runs into the forest";
     int tokens_to_generate = 10;
+    if (argc > 1){
+        tokens_to_generate = std::stoi(argv[1]);
+    }
 
     std::vector<int> tokens = tokenizer.Encoder(input);
     int initial_prompt_size = tokens.size();
@@ -61,9 +64,9 @@ int main() {
             }
 
             inference_engine.AttentionLayer(ln_buffer.data(),
-                                            attention_output.data(),
-                                            seq_len,
-                                            layer_idx);
+                    attention_output.data(),
+                    seq_len,
+                    layer_idx);
 
             for (size_t i = 0; i < seq_len * kModelSize; ++i)
                 input_buffer[i] += attention_output[i];
@@ -79,10 +82,10 @@ int main() {
             }
 
             inference_engine.FeedForwardLayer(ln_buffer.data(),
-                                              ff_output.data(),
-                                              ff_buffer.data(),
-                                              seq_len,
-                                              layer_idx);
+                    ff_output.data(),
+                    ff_buffer.data(),
+                    seq_len,
+                    layer_idx);
 
             for (size_t i = 0; i < seq_len * kModelSize; ++i)
                 input_buffer[i] += ff_output[i];
@@ -93,13 +96,13 @@ int main() {
 
         std::vector<float> final_ln_out(kModelSize);
         std::copy(last_token_vec,
-                  last_token_vec + kModelSize,
-                  final_ln_out.begin());
+                last_token_vec + kModelSize,
+                final_ln_out.begin());
 
         inference_engine.ApplyLayerNorm(final_ln_out.data(),
-                                        model_weights.ln_f_beta,
-                                        model_weights.ln_f_gamma,
-                                        kModelSize);
+                model_weights.ln_f_beta,
+                model_weights.ln_f_gamma,
+                kModelSize);
 
         // CPU logits
         std::vector<float> logits(kVocabSize);
@@ -142,21 +145,23 @@ int main() {
     int decode_tokens = generated_count - 1;
 
     double tpot_ms = (decode_tokens > 0)
-                        ? decode_ms / decode_tokens
-                        : 0.0;
+        ? decode_ms / decode_tokens
+        : 0.0;
 
     double throughput = (generated_count > 0)
-                        ? (generated_count / total_dur.count())
-                        : 0.0;
+        ? (generated_count / total_dur.count())
+        : 0.0;
 
     std::cout << "\n==================================================\n";
-    std::cout << " CPU BENCHMARK RESULTS\n";
+    std::cout << " CPU BENCHMARK RESULTS TABLE\n";
     std::cout << "==================================================\n";
-    std::cout << "TTFT (ms):            " << std::fixed << std::setprecision(2) << ttft_ms << "\n";
-    std::cout << "TPOT (ms/token):      " << tpot_ms << "\n";
-    std::cout << "Total Time (s):       " << total_dur.count() << "\n";
-    std::cout << "Throughput (tok/s):   " << throughput << "\n";
-    std::cout << "==================================================\n";
-
+    std::cout << "|   Tokens |   TTFT (ms) |   TPOT (ms/tok) |   Total Time (s) |   Throughput (tok/s) |\n";
+    std::cout << "|---------:|------------:|----------------:|-----------------:|---------------------:|\n";
+    std::cout << "| " << std::setw(8) << tokens_to_generate
+        << " | " << std::setw(11) << std::fixed << std::setprecision(2) << ttft_ms
+        << " | " << std::setw(14) << std::fixed << std::setprecision(2) << tpot_ms
+        << " | " << std::setw(15) << std::fixed << std::setprecision(2) << total_dur.count()
+        << " | " << std::setw(20) << std::fixed << std::setprecision(2) << throughput
+        << " |\n";
     return 0;
 }

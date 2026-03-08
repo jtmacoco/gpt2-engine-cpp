@@ -6,7 +6,8 @@ from pathlib import Path
 
 # Configuration
 EXECUTABLE = "./build/benchmarks/gpu_bench"
-TOKEN_SIZES = [20, 50, 100, 200, 300, 500, 700, 800, 900, 1000]
+#TOKEN_SIZES = [20, 50, 100, 200, 300, 500, 700, 800, 900, 1000]
+TOKEN_SIZES = [1, 2, 5, 10, 15, 20]
 
 # Match a markdown table data row:
 # | Tokens | TTFT | TPOT | Total | Throughput |
@@ -16,7 +17,7 @@ ROW_RE = re.compile(
 )
 
 def run_benchmark(tokens: int):
-    print(f"Running benchmark for {tokens} tokens...")
+    print(f"Running benchmark for {tokens} tokens...") 
     result = subprocess.run([EXECUTABLE, str(tokens)], capture_output=True, text=True)
 
     # If your binary prints errors to stderr, surface them
@@ -71,7 +72,8 @@ def main():
 
     # --- Graphs (kept similar to your original) ---
     fig, axes = plt.subplots(2, 2, figsize=(12, 10))
-    fig.suptitle("cu-gpt-engine Performance Metrics (KV Cache Enabled)", fontsize=16)
+    #fig.suptitle("cu-gpt-engine Performance Metrics (KV Cache Enabled)", fontsize=16)
+    fig.suptitle("cu-gpt-engine Performance Metrics (KV Cache)", fontsize=16)
 
     axes[0, 0].plot(df["Tokens"], df["TTFT (ms)"], marker='o')
     axes[0, 0].set_title("Time To First Token (TTFT)")
@@ -100,9 +102,9 @@ def main():
 
     plt.tight_layout()
 
-    out_dir = Path("./benchmarks/kv_cache_benchmarks")
+    out_dir = Path("./benchmarks/gpu_benchmarks")
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / "benchmark_results.png"
+    out_path = out_dir / "benchmark_results_kv.png"
     plt.savefig(out_path, dpi=300)
     print(f"\nGraphs saved to '{out_path}'")
 
