@@ -3,6 +3,7 @@ outline.md
 tags
 .ctags
 *sandbox.cu
+ncu_output_kv_unfinished
 
 #Ignore data
 gpt2_embeddings.bin
