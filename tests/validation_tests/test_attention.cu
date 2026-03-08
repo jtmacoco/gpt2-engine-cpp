@@ -11,7 +11,7 @@ void save_to_file(const std::vector<float>& vec, const std::string& filename) {
 int main() {
     int seq_len = 4;
     int hidden_dim = 768;
-    
+
     std::string weights_file = "data/gpt2_embeddings.bin"; 
     auto weights_vec = WeightsLoader::load_weights(weights_file);
     GPT2Weights model_weights;
@@ -29,14 +29,15 @@ int main() {
     cudaMemcpy(d_input, h_input.data(), seq_len * hidden_dim * sizeof(float), cudaMemcpyHostToDevice);
 
     // Added the current_pos argument (0) to match the new AttentionLayer signature
-    int current_pos = 0; 
-    engine.AttentionLayer(d_input, d_output, seq_len, 0, current_pos);
-    cudaDeviceSynchronize();
+    int current_pos = 0;
+    engine.ApplyLayerNorm(d_input, seq_len, /*layer_idx=*/0, /*ln_type=*/1);
+    engine.AttentionLayer(d_input, d_output, seq_len, /*layer_idx=*/0, current_pos);
+    cudaStreamSynchronize(engine.GetStream());
 
     cudaMemcpy(h_output.data(), d_output, seq_len * hidden_dim * sizeof(float), cudaMemcpyDeviceToHost);
 
-    save_to_file(h_input,"tests/h_input.txt");
-    save_to_file(h_output,"tests/h_output.txt");
+    save_to_file(h_input,"tests/validation_tests/h_input.txt");
+    save_to_file(h_output,"tests/validation_tests/h_output.txt");
 
     cudaFree(d_input);
     cudaFree(d_output);

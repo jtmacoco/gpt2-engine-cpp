@@ -19,7 +19,8 @@ def main():
     cuda_out = load_tensor("h_output.txt", seq_len, hidden_dim)
 
     with torch.no_grad():
-        hf_out = model.h[0].attn(h_input)[0]
+        x = model.h[0].ln_1(h_input)
+        hf_out = model.h[0].attn(x)[0]
 
     mse = F.mse_loss(cuda_out, hf_out).item()
     max_diff = torch.max(torch.abs(cuda_out - hf_out)).item()
