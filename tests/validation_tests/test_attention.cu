@@ -28,7 +28,9 @@ int main() {
 
     cudaMemcpy(d_input, h_input.data(), seq_len * hidden_dim * sizeof(float), cudaMemcpyHostToDevice);
 
-    engine.AttentionLayer(d_input, d_output, seq_len, 0);
+    // Added the current_pos argument (0) to match the new AttentionLayer signature
+    int current_pos = 0; 
+    engine.AttentionLayer(d_input, d_output, seq_len, 0, current_pos);
     cudaDeviceSynchronize();
 
     cudaMemcpy(h_output.data(), d_output, seq_len * hidden_dim * sizeof(float), cudaMemcpyDeviceToHost);
@@ -36,7 +38,6 @@ int main() {
     save_to_file(h_input,"tests/h_input.txt");
     save_to_file(h_output,"tests/h_output.txt");
 
-    
     cudaFree(d_input);
     cudaFree(d_output);
     return 0;

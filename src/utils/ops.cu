@@ -42,8 +42,9 @@ namespace ops{
             int total_elements = M * N;
             int threads_per_block = 256;
             int blocks_per_grid = (total_elements + threads_per_block -1) / threads_per_block;
-            AddBiasKernel<<<blocks_per_grid, threads_per_block>>>(d_C, d_bias, M, N);
-            cudaDeviceSynchronize();
+            cudaStream_t stream;
+            cublasGetStream(handle, &stream);
+            AddBiasKernel<<<blocks_per_grid, threads_per_block, 0, stream>>>(d_C, d_bias, M, N);
         }
     }
     void MatMulTransposedB(cublasHandle_t handle, const float* d_A, const float* d_B, float* d_C, int M, int N, int K){
@@ -102,18 +103,18 @@ namespace ops{
             }
         }
     }
-    __global__ void AttentionSoftMaxKernel(float* scores, int seq_len) {
+    __global__ void AttentionSoftMaxKernel(float* scores, int row_length) {
         int row = blockIdx.x; 
         int tid = threadIdx.x;
 
-        float* row_ptr = scores + (row * seq_len);
+        //Jump to the correct row using row_length instead of seq_len
+        float* row_ptr = scores + (row * row_length);
 
-        // Shared memory allows threads in the same block to communicate
         __shared__ float s_max;
         __shared__ float s_sum;
 
         float thread_max = -1e9f;
-        for (int i = tid; i < seq_len; i += blockDim.x) {
+        for (int i = tid; i < row_length; i += blockDim.x) { 
             if (row_ptr[i] > thread_max) {
                 thread_max = row_ptr[i];
             }
@@ -123,7 +124,6 @@ namespace ops{
         max_array[tid] = thread_max;
         __syncthreads(); 
 
-        // Thread 0 finds the absolute max for the row
         if (tid == 0) {
             float row_max = -1e9f;
             for (int i = 0; i < blockDim.x; ++i) {
@@ -134,7 +134,7 @@ namespace ops{
         __syncthreads();
 
         float thread_sum = 0.0f;
-        for (int i = tid; i < seq_len; i += blockDim.x) {
+        for (int i = tid; i < row_length; i += blockDim.x) { // changed seq_len to row_length
             row_ptr[i] = expf(row_ptr[i] - s_max);
             thread_sum += row_ptr[i];
         }
@@ -153,19 +153,19 @@ namespace ops{
         __syncthreads();
 
         //Normalize 
-        for (int i = tid; i < seq_len; i += blockDim.x) {
+        for (int i = tid; i < row_length; i += blockDim.x) { // changed seq_len to row_length
             row_ptr[i] /= s_sum;
         }
     }
-    void AttentionSoftMax(float* d_scores, int seq_len){
-        int blocks = seq_len;
+
+    void AttentionSoftMax(float* d_scores, int num_rows, int row_length, cudaStream_t stream) {
+        int blocks = num_rows; // 1 block per row
         int threads = 256;
 
-        AttentionSoftMaxKernel<<<blocks, threads>>>(d_scores, seq_len);
+        AttentionSoftMaxKernel<<<blocks, threads, 0, stream>>>(d_scores, row_length);
     }
-
     __global__ void ConcatHeadsKernel(const float* context_layer, float* proj_output,
-                                      int seq_len, int num_heads, int head_dim){
+            int seq_len, int num_heads, int head_dim ){
 
         int idx = blockIdx.x * blockDim.x + threadIdx.x;
         int hidden_dim = num_heads * head_dim;
@@ -183,20 +183,20 @@ namespace ops{
 
     __global__ void GeluKernel(float* buffer, int size){
         int idx = blockIdx.x * blockDim.x + threadIdx.x;
-        
+
         if (idx < size){
             float x = buffer[idx];
             float x_cubed = x * x * x;
             float inner = 0.7978845608f * (x + 0.044715f * x_cubed);
-        
+
             buffer[idx] = 0.5f * x * (1.0f + tanhf(inner));
         }
     }
 
-    void Gelu(float* d_buffer, int size){
+    void Gelu(float* d_buffer, int size, cudaStream_t stream){
         int threads = 256;
         int blocks = (size + threads - 1) / threads;
-        GeluKernel<<<blocks, threads>>>(d_buffer, size);
+        GeluKernel<<<blocks, threads, 0, stream>>>(d_buffer, size);
     }
 
     __global__ void LayerNormKernel(float* x, const float* beta, const float* gamma, int dim){
@@ -243,10 +243,10 @@ namespace ops{
         }
     }
 
-    void LayerNorm(float* d_x, const float* d_beta, const float* d_gamma, int dim){
+    void LayerNorm(float* d_x, const float* d_beta, const float* d_gamma, int dim, cudaStream_t stream){
         int threads = 256;
         int blocks = 1;
-        LayerNormKernel<<<blocks, threads>>>(d_x, d_beta, d_gamma, dim);
+        LayerNormKernel<<<blocks, threads, 0, stream>>>(d_x, d_beta, d_gamma, dim);
     }
     __global__ void AddResidualKernel(float* target, const float* source, int size){
         int idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -254,33 +254,146 @@ namespace ops{
             target[idx] += source[idx];
         }
     }
-    void AddResidual(float* d_target, const float* d_source, int size){
+    void AddResidual(float* d_target, const float* d_source, int size, cudaStream_t stream){
         int threads = 256;
         int blocks = (size + threads-1) / threads;
-        AddResidualKernel<<<blocks, threads>>>(d_target, d_source, size);
+        AddResidualKernel<<<blocks, threads, 0, stream>>>(d_target, d_source, size);
     }
     __global__ void EmbeddingKernel(const int* tokens, const float* token_emb, const float* pos_emb, float* output,
-            int seq_len, int hidden_dim) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    int total_elements = seq_len * hidden_dim;
+            int seq_len, int hidden_dim, int current_pos) {
+        int idx = blockIdx.x * blockDim.x + threadIdx.x;
+        int total_elements = seq_len * hidden_dim;
 
-    if (idx < total_elements) {
-        int t = idx / hidden_dim; // Which token in the sequence
-        int d = idx % hidden_dim; // Which dimension in the vector
+        if (idx < total_elements) {
+            int t = idx / hidden_dim; // Local index (0 to seq_len - 1)
+            int d = idx % hidden_dim;
 
-        int token_id = tokens[t];
+            int token_id = tokens[t];
+            int absolute_pos = current_pos + t; // Add current_pos to get the true position!
 
-        // Output = Token Embedding + Positional Embedding
-        output[idx] = token_emb[token_id * hidden_dim + d] + pos_emb[t * hidden_dim + d];
+            output[idx] = token_emb[token_id * hidden_dim + d] + pos_emb[absolute_pos * hidden_dim + d];
+        }
     }
-}
-void ApplyEmbedding(const int* d_tokens, const float* d_token_emb, const float* d_pos_emb, float* d_output,
-        int seq_len, int hidden_dim) {
 
+    void ApplyEmbedding(const int* d_tokens, const float* d_token_emb, const float* d_pos_emb, float* d_output,
+            int seq_len, int hidden_dim, int current_pos, cudaStream_t stream) {
         int total_elements = seq_len * hidden_dim;
         int threads = 256;
         int blocks = (total_elements + threads - 1) / threads;
-        EmbeddingKernel<<<blocks, threads>>>(d_tokens, d_token_emb, d_pos_emb, d_output, seq_len, hidden_dim);
+        EmbeddingKernel<<<blocks, threads>>>(d_tokens, d_token_emb, d_pos_emb, d_output, seq_len, hidden_dim, current_pos);
+    }
+    __global__ void AppendKVKernel(
+            const float* new_K, const float* new_V,
+            float* K_cache, float* V_cache,
+            int current_pos, int max_seq_len, int num_heads, int head_dim){
+        int idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+        int total_elements = num_heads * head_dim;
+
+        if (idx < total_elements){
+            int d = idx % head_dim;
+            int h = idx / head_dim;
+
+            int src_idx = h * head_dim + d;
+            int dst_idx = h * (max_seq_len * head_dim) + (current_pos * head_dim) + d;
+            K_cache[dst_idx] = new_K[src_idx];
+            V_cache[dst_idx] = new_V[src_idx];
+        }
+
+    }
+    void AppendKV(
+            const float* d_new_K, const float* d_new_V,
+            float* d_K_cache, float* d_V_cache,
+            int current_pos, int max_seq_len, int num_heads, int head_dim, cudaStream_t stream){
+        int total_elements = num_heads * head_dim;
+        int threads = 256;
+        int blocks = (total_elements + threads - 1) / threads;
+        AppendKVKernel<<<blocks, threads>>>(
+                d_new_K, d_new_V,
+                d_K_cache, d_V_cache,
+                current_pos, max_seq_len, num_heads, head_dim
+                );
+    }
+    __global__ void ScaledKernel(float* scores, int total_elements, float scale){
+        int idx = blockIdx.x * blockDim.x + threadIdx.x;
+        if (idx < total_elements){
+            scores[idx] *= scale;
+        }
+    }
+
+
+    __global__ void BulkAppendKVKernel(
+            const float* new_K, const float* new_V,
+            float* K_cache, float* V_cache,
+            int seq_len, int max_seq_len, int num_heads, int head_dim
+            ) {
+        int idx = blockIdx.x * blockDim.x + threadIdx.x;
+        int total_elements = seq_len * num_heads * head_dim;
+
+        if (idx < total_elements) {
+            int d = idx % head_dim;
+            int s = (idx / head_dim) % seq_len;
+            int h = idx / (seq_len * head_dim);
+
+            int src_idx = idx; 
+            int dst_idx = h * (max_seq_len * head_dim) + s * head_dim + d;
+
+            K_cache[dst_idx] = new_K[src_idx];
+            V_cache[dst_idx] = new_V[src_idx];
+        }
+    }
+
+    void BulkAppendKV(
+            const float* d_new_K, const float* d_new_V,
+            float* d_K_cache, float* d_V_cache,
+            int seq_len, int max_seq_len, int num_heads, int head_dim,
+            cudaStream_t stream
+            ) {
+        int total_elements = seq_len * num_heads * head_dim;
+        int threads = 256;
+        int blocks = (total_elements + threads - 1) / threads;
+
+        BulkAppendKVKernel<<<blocks, threads, 0, stream>>>(
+                d_new_K, d_new_V,
+                d_K_cache, d_V_cache,
+                seq_len, max_seq_len, num_heads, head_dim
+                );
+
+    }
+    __global__ void ArgMaxKernel(const float* logits, int n, int* out_idx) {
+        __shared__ float s_val[256];
+        __shared__ int   s_idx[256];
+
+        int tid = threadIdx.x;
+        float best_v = -1e30f;
+        int best_i = 0;
+
+        for (int i = tid; i < n; i += blockDim.x) {
+            float v = logits[i];
+            if (v > best_v) { best_v = v; best_i = i; }
+        }
+
+        s_val[tid] = best_v;
+        s_idx[tid] = best_i;
+        __syncthreads();
+
+        for (int offset = blockDim.x / 2; offset > 0; offset >>= 1) {
+            if (tid < offset) {
+                float v2 = s_val[tid + offset];
+                int   i2 = s_idx[tid + offset];
+                if (v2 > s_val[tid]) {
+                    s_val[tid] = v2;
+                    s_idx[tid] = i2;
+                }
+            }
+            __syncthreads();
+        }
+
+        if (tid == 0) *out_idx = s_idx[0];
+    }
+
+    void ArgMax(const float* d_logits, int n, int* d_out_idx, cudaStream_t stream) {
+        ArgMaxKernel<<<1, 256, 0, stream>>>(d_logits, n, d_out_idx);
     }
 
     void SoftMax(float* x, int size){
