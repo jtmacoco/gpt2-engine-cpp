@@ -55,7 +55,10 @@ InferenceEngine::InferenceEngine(const GPT2Weights& weights):weights_(weights){
     //Buffer for final logit calculations and Argmax
     cudaMalloc(&d_logits_, kVocabSize * sizeof(float));
     cudaMalloc(&d_best_token_, sizeof(int));
-   
+
+    cudaMemsetAsync(d_K_cache_, 0, num_layers * cache_size_per_layer * sizeof(float), stream_);
+    cudaMemsetAsync(d_V_cache_, 0, num_layers * cache_size_per_layer * sizeof(float), stream_);
+
 }
 
 void InferenceEngine::ApplyEmbedding(const int* d_tokens, int seq_len, float* d_output_buffer, int current_pos) {
@@ -85,7 +88,7 @@ void InferenceEngine::ApplyLayerNorm(float* d_x, int seq_len, int layer_idx, int
     //LayerNorm calculated across hidden dim for each token indepedently 
     int dim = kModelSize; // 768
 
-    for (int i = 0; i < seq_len; ++i) {
+    for (size_t i = 0; i < seq_len; ++i) {
         //Calculate poter offsets
         float* d_current_vec = d_x + (i * dim);
 
@@ -105,9 +108,9 @@ void InferenceEngine::AttentionLayer(float* input, float* output, int seq_len, i
     int threads = 256;
 
     int max_seq_len = 1024;//TODO add to global 
-    //Cache data
-    //is_prefill is true if we are processing prompt so multiple tokens at once
-    //cache_len is total history (past tokens + current toekns)
+                           //Cache data
+                           //is_prefill is true if we are processing prompt so multiple tokens at once
+                           //cache_len is total history (past tokens + current toekns)
     int is_prefill = (seq_len > 1);
     int cache_len = is_prefill ? seq_len : (current_pos + 1);
 
@@ -184,7 +187,7 @@ void InferenceEngine::AttentionLayer(float* input, float* output, int seq_len, i
             ops::MatMul(cublas_handle_, d_score_head, d_v_head, d_context_head, 1, head_dim, cache_len, nullptr);
         }
     }// end h loop
-    //Final Projections
+     //Final Projections
     int total_concat_elements = seq_len * num_heads * head_dim;
     int concat_threads = 256;
     int concat_blocks = (total_concat_elements + concat_threads - 1) / concat_threads;
@@ -246,12 +249,12 @@ void InferenceEngine::FeedForwardLayer(float* input, float* output, float* buffe
 //Predicts the next token by projecting the final hidden state to vocabulary space.
 int InferenceEngine::SampleNextToken(const float* d_last_hidden /*[hidden]*/) {
     ops::MatMulTransposedB(
-        cublas_handle_,
-        d_last_hidden,
-        d_token_emb_,
-        d_logits_,
-        1, kVocabSize, kModelSize
-    );
+            cublas_handle_,
+            d_last_hidden,
+            d_token_emb_,
+            d_logits_,
+            1, kVocabSize, kModelSize
+            );
 
     //Gready selection
     //Change later and use temperature
@@ -263,6 +266,21 @@ int InferenceEngine::SampleNextToken(const float* d_last_hidden /*[hidden]*/) {
     cudaStreamSynchronize(stream_); 
     return h_best;
 }
+
+void InferenceEngine::ResetKV() {
+    const int num_heads   = 12;
+    const int head_dim    = 64;
+    const int num_layers  = 12;
+
+    size_t cache_elems_per_layer = (size_t)num_heads * (size_t)kMaxSequence * (size_t)head_dim;
+    size_t total_cache_elems     = (size_t)num_layers * cache_elems_per_layer;
+    size_t total_cache_bytes     = total_cache_elems * sizeof(float);
+
+    // Clear caches on the engine stream (async)
+    cudaMemsetAsync(d_K_cache_, 0, total_cache_bytes, stream_);
+    cudaMemsetAsync(d_V_cache_, 0, total_cache_bytes, stream_);
+}
+
 InferenceEngine::~InferenceEngine(){
     cublasDestroy(cublas_handle_);
     if (d_weights_.weight_token_emb != nullptr) {

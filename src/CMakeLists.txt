@@ -4,6 +4,7 @@ add_library(gpt2_cpu_core STATIC
     utils/ops.cpp
     backend/inference_engine.cpp
 )
+
 target_include_directories(gpt2_cpu_core PUBLIC ${PROJECT_SOURCE_DIR}/include)
 
 add_library(gpt2_cuda_core STATIC
@@ -12,6 +13,7 @@ add_library(gpt2_cuda_core STATIC
     utils/ops.cu
     backend/inference_engine.cu
 )
+
 target_include_directories(gpt2_cuda_core PUBLIC ${PROJECT_SOURCE_DIR}/include)
 target_compile_definitions(gpt2_cuda_core PUBLIC USE_CUDA)
 target_link_libraries(gpt2_cuda_core PUBLIC CUDA::cublas CUDA::cudart)

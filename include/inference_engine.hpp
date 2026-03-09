@@ -17,6 +17,8 @@ class InferenceEngine{
         void ApplyLayerNorm(float* d_x, int seq_len, int layer_idx, int ln_type);
         void AttentionLayer(float* input,float* output, int seq_len, int layer_idx, int current_pos);
         void ApplyEmbedding(const int* d_tokens, int seq_len, float* d_output_buffer, int current_pos);
+        void ResetKV();
+
         int SampleNextToken(const float* d_last_hidden); 
 
         cudaStream_t GetStream() const {return stream_;};

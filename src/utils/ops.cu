@@ -280,7 +280,7 @@ namespace ops{
         int total_elements = seq_len * hidden_dim;
         int threads = 256;
         int blocks = (total_elements + threads - 1) / threads;
-        EmbeddingKernel<<<blocks, threads>>>(d_tokens, d_token_emb, d_pos_emb, d_output, seq_len, hidden_dim, current_pos);
+        EmbeddingKernel<<<blocks, threads, 0, stream>>>(d_tokens, d_token_emb, d_pos_emb, d_output, seq_len, hidden_dim, current_pos);
     }
     __global__ void AppendKVKernel(
             const float* new_K, const float* new_V,
@@ -308,7 +308,7 @@ namespace ops{
         int total_elements = num_heads * head_dim;
         int threads = 256;
         int blocks = (total_elements + threads - 1) / threads;
-        AppendKVKernel<<<blocks, threads>>>(
+        AppendKVKernel<<<blocks, threads, 0, stream>>>(
                 d_new_K, d_new_V,
                 d_K_cache, d_V_cache,
                 current_pos, max_seq_len, num_heads, head_dim
