@@ -66,29 +66,20 @@ GPT2 (124M parameter) architecture.
 
 ## Latency Speedup (TTFT)
 Measures how much faster GPU produces first token
-$$
-\text{Speedup}_{latency} =
-\frac{TTFT_{cpu}}{TTFT_{gpu}}
-$$
+$$\text{Speedup}_{latency} = \frac{TTFT_{cpu}}{TTFT_{gpu}}$$
 
 ---
 
 ## Total Time Speedup
 Measures overall generation acceleration
-$$
-\text{Speedup}_{total} =
-\frac{T_{cpu}}{T_{gpu}}
-$$
+$$\text{Speedup}_{total} = \frac{T_{cpu}}{T_{gpu}}$$
 
 ---
 
 ## Throughput Speedup
 Measures how many more tokens per second the GPU generates compared to CPU.
 
-$$
-\text{Speedup}_{throughput} =
-\frac{TP_{gpu}}{TP_{cpu}}
-$$
+$$\text{Speedup}_{throughput} = \frac{TP_{gpu}}{TP_{cpu}}$$
 
 ---
 
@@ -105,24 +96,11 @@ Given:
 
 ### Calculations
 
-$$
-\text{Latency Speedup} =
-\frac{2885.47}{6.08}
-= 474.58\times
-$$
+$$\text{Latency Speedup} = \frac{2885.47}{6.08} = 474.58\times$$
 
-$$
-\text{Total Time Speedup} =
-\frac{390.183}{0.20542}
-= 1899.44\times
-$$
+$$\text{Total Time Speedup} = \frac{390.183}{0.20542} = 1899.44\times$$
 
-$$
-\text{Throughput Speedup} =
-\frac{243.42}{0.13}
-= 1872.46\times
-$$
-
+$$\text{Throughput Speedup} = \frac{243.42}{0.13} = 1872.46\times$$
 
  <br>
 
