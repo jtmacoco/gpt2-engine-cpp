@@ -27,33 +27,101 @@ GPT2 (124M parameter) architecture.
 
 # Validation & Performance
 - **Mathematical Correctness:** Achieved a Mean Squared Error (MSE) of effectively `0.0` and a Maximum Absolute Difference of `< 1e-3` in FP32 logit outputs compared to PyTorch's `F.scaled_dot_product_attention`.
-- **Hardware Acceleration (CPU vs GPU):** Achieved up to a **71x reduction in latency** by migrating sequential C++ matrix operations to custom `__global__` CUDA kernels.
-- **Throughput Scaling:** With KV caching enabled, achieved up to **1780× higher token throughput** at longer sequence lengths relative to the CPU implementation.
+- **Hardware Acceleration (CPU vs GPU):** Achieved up to a **544x reduction in latency** by migrating sequential C++ matrix operations to custom `__global__` CUDA kernels.
+- **Throughput Scaling:** With KV caching enabled, achieved up to **1872.46x higher token throughput** at longer sequence lengths relative to the CPU implementation.
 - **Hardware Efficiency:** Profiled via NVIDIA Nsight Compute (`ncu`), achieving **99.37% branch efficiency**, demonstrating highly optimized warp execution with minimal thread divergence.
 - **Full-Stack Memory Safety:** Validated host execution via `valgrind` and device execution via NVIDIA `compute-sanitizer`, guaranteeing **0 memory leaks and 0 invalid out-of-bounds reads/writes** across millions of dynamic CPU and GPU tensor allocations.
-- Reason I didn't do larger tokens after 50 for the CPU version is because it takes to long
+- CPU benchmarks for sequences larger than 50 tokens were omitted as they took a very long time
+
 
 
 # CPU vs GPU Benchmark Comparison
 
-| Tokens | CPU TTFT (ms) | GPU TTFT (ms) | Speedup (Latency) | CPU Throughput (tok/s) | GPU Throughput (tok/s) | Speedup (Throughput) |
-|--------|---------------|---------------|-------------------|------------------------|------------------------|----------------------|
-| 1      | 2890.29       | 42.32         | 68.29x            | 0.35                   | 22.7                   | 64.86x               |
-| 2      | 2902.79       | 40.43         | 71.79x            | 0.33                   | 40.87                  | 123.85x              |
-| 5      | 2918.43       | 41.17         | 70.89x            | 0.30                   | 82.62                  | 275.40x              |
-| 10     | 2901.96       | 40.81         | 71.14x            | 0.26                   | 127.64                 | 490.92x              |
-| 15     | 2948.59       | -             | -                 | 0.23                   | -                      | -                    |
-| 20     | 2953.20       | 40.73         | 72.50x            | 0.21                   | 174.54                 | 831.14x              |
-| 30     | 2940.34       | 40.54         | 72.56x            | 0.17                   | 205.15                 | 1206.76x             |
-| 50     | 2879.71       | 40.49         | 71.13x            | 0.13                   | 231.4                  | 1780.00x             |
-| 100    | -             | 40.61         | -                 | -                      | 255.47                 | -                    |
-| 200    | -             | 40.67         | -                 | -                      | 266.45                 | -                    |
-| 300    | -             | 40.09         | -                 | -                      | 269.18                 | -                    |
-| 500    | -             | 40.34         | -                 | -                      | 267.65                 | -                    |
-| 700    | -             | 40.29         | -                 | -                      | 247.29                 | -                    |
-| 800    | -             | 43.51         | -                 | -                      | 259.2                  | -                    |
-| 900    | -             | 40.36         | -                 | -                      | 259.1                  | -                    |
-| 1000   | -             | 43.16         | -                 | -                      | 237.3                  | -                    |
+| Tokens | CPU TTFT (ms) | GPU TTFT (ms) | Speedup (Latency) | CPU Total Time (s) | GPU Total Time (s) | Speedup (Total Time) | CPU Throughput (tok/s) | GPU Throughput (tok/s) | Speedup (Throughput) |
+| ------ | ------------- | ------------- | ----------------- | ------------------ | ------------------ | -------------------- | ---------------------- | ---------------------- | -------------------- |
+| 5      | 2919.88       | 5.36          | 544.75x           | 16.6428            | 0.01951            | 852.99x              | 0.30                   | 256.86                 | 856.20x              |
+| 10     | 2926.20       | 5.45          | 536.92x           | 38.3236            | 0.03865            | 991.56x              | 0.26                   | 259.34                 | 997.46x              |
+| 20     | 2880.89       | 6.11          | 471.50x           | 96.0915            | 0.08435            | 1139.20x             | 0.21                   | 237.23                 | 1129.67x             |
+| 30     | 2901.22       | 6.02          | 481.93x           | 174.708            | 0.12706            | 1374.98x             | 0.17                   | 236.18                 | 1389.29x             |
+| 50     | 2885.47       | 6.08          | 474.58x           | 390.183            | 0.20542            | 1899.44x             | 0.13                   | 243.42                 | 1872.46x             |
+| 100    | N/A           | 6.22          | N/A               | N/A                | 0.43376            | N/A                  | N/A                    | 230.81                 | N/A                  |
+| 200    | N/A           | 6.35          | N/A               | N/A                | 0.86553            | N/A                  | N/A                    | 231.54                 | N/A                  |
+| 300    | N/A           | 6.27          | N/A               | N/A                | 1.30069            | N/A                  | N/A                    | 230.87                 | N/A                  |
+| 500    | N/A           | 5.73          | N/A               | N/A                | 2.07385            | N/A                  | N/A                    | 241.63                 | N/A                  |
+| 700    | N/A           | 5.40          | N/A               | N/A                | 2.80812            | N/A                  | N/A                    | 249.50                 | N/A                  |
+| 800    | N/A           | 5.52          | N/A               | N/A                | 3.08160            | N/A                  | N/A                    | 259.71                 | N/A                  |
+| 900    | N/A           | 5.41          | N/A               | N/A                | 3.46639            | N/A                  | N/A                    | 259.76                 | N/A                  |
+| 1000   | N/A           | 5.43          | N/A               | N/A                | 4.06463            | N/A                  | N/A                    | 246.69                 | N/A                  |
+
+---
+
+## Definitions
+
+- `TTFT_cpu` = CPU Time-To-First-Token (ms)  
+- `TTFT_gpu` = GPU Time-To-First-Token (ms)  
+- `T_cpu` = CPU Total Generation Time (s)  
+- `T_gpu` = GPU Total Generation Time (s)  
+- `TP_cpu` = CPU Throughput (tokens/sec)  
+- `TP_gpu` = GPU Throughput (tokens/sec)  
+
+## Latency Speedup (TTFT)
+Measures how much faster GPU produces first token
+$$
+\text{Speedup}_{latency} =
+\frac{TTFT_{cpu}}{TTFT_{gpu}}
+$$
+
+---
+
+## Total Time Speedup
+Measures overall generation acceleration
+$$
+\text{Speedup}_{total} =
+\frac{T_{cpu}}{T_{gpu}}
+$$
+
+---
+
+## Throughput Speedup
+Measures how many more tokens per second the GPU generates compared to CPU.
+
+$$
+\text{Speedup}_{throughput} =
+\frac{TP_{gpu}}{TP_{cpu}}
+$$
+
+---
+
+## Example (50 Tokens)
+
+Given:
+
+- `TTFT_cpu = 2885.47 ms`
+- `TTFT_gpu = 6.08 ms`
+- `T_cpu = 390.183 s`
+- `T_gpu = 0.20542 s`
+- `TP_cpu = 0.13 tok/s`
+- `TP_gpu = 243.42 tok/s`
+
+### Calculations
+
+$$
+\text{Latency Speedup} =
+\frac{2885.47}{6.08}
+= 474.58\times
+$$
+
+$$
+\text{Total Time Speedup} =
+\frac{390.183}{0.20542}
+= 1899.44\times
+$$
+
+$$
+\text{Throughput Speedup} =
+\frac{243.42}{0.13}
+= 1872.46\times
+$$
 
 
  <br>
@@ -65,8 +133,16 @@ GPT2 (124M parameter) architecture.
 ## GPU Performance
 !["GPU"](./benchmarks/gpu_benchmarks/benchmark_results_gpu.png "GPU Performance")
 
+---
+# Hardware & Software
+- **GPU:** NVIDIA GeForce RTX 3060  
+- **ToolKit:** CUDA Toolkit 13.1.115
+- **Libraries:** cuBLAS
+- **CMake:** Version 3.20+
 
+---
 
 # Future Work
-- Try to implement FP16 
+- Implement FP16 
+- Implemente Temperature instead of taking ArgMax
 
