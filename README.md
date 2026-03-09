@@ -31,7 +31,7 @@ GPT2 (124M parameter) architecture.
 - **Throughput Scaling:** With KV caching enabled, achieved up to **1872.46x higher token throughput** at longer sequence lengths relative to the CPU implementation.
 - **Hardware Efficiency:** Profiled via NVIDIA Nsight Compute (`ncu`), achieving **99.37% branch efficiency**, demonstrating highly optimized warp execution with minimal thread divergence.
 - **Full-Stack Memory Safety:** Validated host execution via `valgrind` and device execution via NVIDIA `compute-sanitizer`, guaranteeing **0 memory leaks and 0 invalid out-of-bounds reads/writes** across millions of dynamic CPU and GPU tensor allocations.
-- **CPU benchmarks for sequences larger than 50 tokens were omitted as they took a very long time**
+- **CPU benchmarks for sequences larger than 50 tokens were omitted as they took a very long time so listed as N/A**
 
 
 
