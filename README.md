@@ -1,5 +1,5 @@
 # gpt2-engine-cpp
-> Custom GPT2 inference engine built from scratch in C++ and CUDA r 
+> Custom GPT2 inference engine built from scratch in C++ and CUDA 
 
 
 # Overview
