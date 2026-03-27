@@ -7,8 +7,9 @@ from typing import Dict, List, Optional, Tuple
 
 # Configuration
 EXECUTABLE = "./build/benchmarks/cpu_bench"
-#TOKEN_SIZES = [5, 10, 20, 30, 50, 100, 200, 300, 500, 700, 800, 900, 1000]
-TOKEN_SIZES = [5, 10, 20, 30, 50]
+RUN_CMD = ["python", "./benchmarks/hf_bench.py"] #
+TOKEN_SIZES = [5, 10, 20, 30, 50, 100, 200, 300, 500, 700, 800, 900, 1000]
+#TOKEN_SIZES = [5, 10, 20, 30, 50]
 
 def _strip_cell(s: str) -> str:
     return s.strip()
@@ -154,6 +155,40 @@ def normalize_metrics(header: List[str], row: List[str], requested_tokens: int) 
 
 def run_benchmark(tokens: int) -> Optional[Dict]:
     print(f"Running benchmark for {tokens} tokens...")
+    
+    # Dynamically build the command list
+    cmd = RUN_CMD + [str(tokens)]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+
+    if result.returncode != 0:
+        print(
+            f"Benchmark failed for {tokens} tokens (exit {result.returncode}).\n"
+            f"STDERR:\n{result.stderr}\nSTDOUT:\n{result.stdout}"
+        )
+        return None
+    output = result.stdout
+    parsed = extract_last_markdown_table(output)
+    if not parsed:
+        print(f"Error: could not find markdown table in output for {tokens} tokens.\n{output}")
+        return None
+
+    header, row = parsed
+    metrics = normalize_metrics(header, row, requested_tokens=tokens)
+    if not metrics:
+        print(f"Error: found table but couldn't normalize metrics for {tokens} tokens.\nHeader={header}\nRow={row}\n\n{output}")
+        return None
+
+    # sanity check
+    if metrics["Tokens"] != tokens:
+        print(f"Warning: parsed Tokens={metrics['Tokens']} != requested {tokens}. Keeping parsed value.")
+
+    return metrics
+
+
+'''
+C++/CUDA version
+def run_benchmark(tokens: int) -> Optional[Dict]:
+    print(f"Running benchmark for {tokens} tokens...")
     result = subprocess.run([EXECUTABLE, str(tokens)], capture_output=True, text=True)
 
     if result.returncode != 0:
@@ -180,7 +215,7 @@ def run_benchmark(tokens: int) -> Optional[Dict]:
         print(f"Warning: parsed Tokens={metrics['Tokens']} != requested {tokens}. Keeping parsed value.")
 
     return metrics
-
+'''
 def main():
     results = []
     for t in TOKEN_SIZES:
@@ -231,9 +266,9 @@ def main():
 
     plt.tight_layout()
 
-    out_dir = Path("./benchmarks/cpu_benchmarks")
+    out_dir = Path("./benchmarks/hf_benchmarks")
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / "benchmark_results_cpu.png"
+    out_path = out_dir / "benchmark_results_pytorch.png"
     plt.savefig(out_path, dpi=300)
     print(f"\nGraphs saved to '{out_path}'")
 

@@ -33,6 +33,16 @@ GPT2 (124M parameter) architecture.
 - **Full-Stack Memory Safety:** Validated host execution via `valgrind` and device execution via NVIDIA `compute-sanitizer`, guaranteeing **0 memory leaks and 0 invalid out-of-bounds reads/writes** across millions of dynamic CPU and GPU tensor allocations.
 - **CPU benchmarks for sequences larger than 50 tokens were omitted as they took a very long time so listed as N/A**
 
+# Benchmarking Methodology & Notes
+The benchmarks demonstrate that Cu-Transformer successfully reduces Python interpreter overhead and memory allocation bottlenecks by executing custom CUDA kernels directly. However, for full transparency, here is the context behind the numbers:
+
+- **The Baseline (What was compared):** The baseline is the standard Hugging Face `transformers` library running PyTorch in eager mode. Both implementations executed identical greedy decoding workloads (`use_cache=True`) on an NVIDIA RTX 3060.
+- **Fairness & Interpretation of Results:** The custom Cu-Transformer engine is a highly specialized implementation targeting a single decoding strategy (greedy)  with tightly controlled memory layouts and execution flow. In contrast, Hugging Face `generate()` is a general-purpose API designed to support a wide range of decoding strategies, batching modes, and model architectures. As a result, this comparison should be interpreted as **specialized vs general-purpose execution**, not as a statement that one approach is universally faster.
+- **The JIT / `torch.compile` Context:** PyTorch 2.x `torch.compile` does work for Hugging Face models and was enabled in the benchmark. However, autoregressive generation still tends to limit how much benefit compilation can deliver in the default `generate()` path, because graph breaks and shape variability reduce optimization opportunities. In particular, Hugging Face documents that the default dynamic KV cache prevents taking advantage of most JIT optimizations, while fixed-size caches such as `StaticCache` are more compatible with `torch.compile`. Cu-Transformer avoids much of this overhead by using a specialized decode path with preallocated buffers and fixed execution patterns. :contentReference[oaicite:0]{index=0}
+- **PyTorch TTFT (Time To First Token):** TTFT is not reported for PyTorch because `model.generate()` is a blocking function that bundles prefill and decode phases together. Extracting TTFT requires a custom streamer hook, so the comparison focuses on total latency and throughput instead.
+- **Scope of the Comparison:** Cu-Transformer was built as a low-level exploration of GPU execution. This benchmark does **not** compare against optimized production inference systems (e.g., vLLM, TensorRT-LLM), which implement advanced techniques such as FlashAttention, PagedAttention, kernel fusion, and continuous batching. Those systems are designed to close or exceed this performance gap in real-world deployments.
+
+
 
 
 # CPU vs GPU Benchmark Comparison
@@ -54,6 +64,25 @@ GPT2 (124M parameter) architecture.
 | 1000   | N/A           | 5.43          | N/A               | N/A                | 4.06463            | N/A                  | N/A                    | 246.69                 | N/A                  |
 
 ---
+
+## PyTorch (Huggingface) vs GPU Benchmark Comparison:
+
+| Tokens | GPU Total Time (s) | PyTorch Total Time (s) | Speedup (Total Time) | GPU Throughput (tok/s) | PyTorch Throughput (tok/s) | Speedup (Throughput) |
+| ------ | ------------------ | ---------------------- | -------------------- | ---------------------- | -------------------------- | -------------------- |
+| 5      | 0.01951            | 0.02552                | 0.76x                | 256.86                 | 195.93                     | 1.31x                |
+| 10     | 0.03865            | 0.04860                | 0.80x                | 259.34                 | 205.78                     | 1.26x                |
+| 20     | 0.08435            | 0.10592                | 0.80x                | 237.23                 | 188.83                     | 1.26x                |
+| 30     | 0.12706            | 0.14586                | 0.87x                | 236.18                 | 205.68                     | 1.15x                |
+| 50     | 0.20542            | 0.25087                | 0.82x                | 243.42                 | 199.31                     | 1.22x                |
+| 100    | 0.43376            | 0.49058                | 0.88x                | 230.81                 | 203.84                     | 1.13x                |
+| 200    | 0.86553            | 0.99766                | 0.87x                | 231.54                 | 200.47                     | 1.15x                |
+| 300    | 1.30069            | 1.52521                | 0.85x                | 230.87                 | 196.69                     | 1.17x                |
+| 500    | 2.07385            | 2.54238                | 0.82x                | 241.63                 | 196.67                     | 1.23x                |
+| 700    | 2.80812            | 3.49153                | 0.80x                | 249.50                 | 200.49                     | 1.24x                |
+| 800    | 3.08160            | 4.10253                | 0.75x                | 259.71                 | 195.00                     | 1.33x                |
+| 900    | 3.46639            | 4.71424                | 0.74x                | 259.76                 | 190.91                     | 1.36x                |
+| 1000   | 4.06463            | 5.14497                | 0.79x                | 246.69                 | 194.36                     | 1.27x                |
+
 
 ## Definitions
 
@@ -147,4 +176,5 @@ $$
 # Future Work
 - Implement FP16 
 - Implemente Temperature instead of taking ArgMax
+- Fix run_benchmarks to be more user friendly
 
