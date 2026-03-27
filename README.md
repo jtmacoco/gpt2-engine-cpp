@@ -1,5 +1,6 @@
 # gpt2-engine-cpp
-> Custom GPT2 inference engine built from scratch in C++ and CUDA
+> Custom GPT2 inference engine built from scratch in C++ and CUDA r 
+
 
 # Overview
 Project is meant to be a high performance implementation of
@@ -25,25 +26,30 @@ GPT2 (124M parameter) architecture.
 - Deterministic: Can handle precise floating point arithmetic stability across matrix operations
 - KV Caching
 
-# Validation & Performance
-- **Mathematical Correctness:** Achieved a Mean Squared Error (MSE) of effectively `0.0` and a Maximum Absolute Difference of `< 1e-3` in FP32 logit outputs compared to PyTorch's `F.scaled_dot_product_attention`.
-- **Hardware Acceleration (CPU vs GPU):** Achieved up to a **544x reduction in latency** by migrating sequential C++ matrix operations to custom `__global__` CUDA kernels.
-- **Throughput Scaling:** With KV caching enabled, achieved up to **1872.46x higher token throughput** at longer sequence lengths relative to the CPU implementation.
-- **Hardware Efficiency:** Profiled via NVIDIA Nsight Compute (`ncu`), achieving **99.37% branch efficiency**, demonstrating highly optimized warp execution with minimal thread divergence.
-- **Full-Stack Memory Safety:** Validated host execution via `valgrind` and device execution via NVIDIA `compute-sanitizer`, guaranteeing **0 memory leaks and 0 invalid out-of-bounds reads/writes** across millions of dynamic CPU and GPU tensor allocations.
-- **CPU benchmarks for sequences larger than 50 tokens were omitted as they took a very long time so listed as N/A**
+# Results & Validation
 
-# Benchmarking Methodology & Notes
-The benchmarks demonstrate that Cu-Transformer successfully reduces Python interpreter overhead and memory allocation bottlenecks by executing custom CUDA kernels directly. However, for full transparency, here is the context behind the numbers:
+- **Mathematical Correctness:** Achieved Mean Squared Error (MSE) ≈ `0.0` and Maximum Absolute Difference < `1e-3` in FP32 logits compared to PyTorch `F.scaled_dot_product_attention`.
+- **Hardware Acceleration (CPU → GPU):** Up to **544x reduction in latency** by replacing sequential CPU matrix operations with custom CUDA kernels.
+- **Throughput Scaling:** With KV caching, achieved up to **1872.46x higher token throughput** at longer sequence lengths vs CPU.
+- **Hardware Efficiency:** Measured via NVIDIA Nsight Compute (`ncu`), achieving **99.37% branch efficiency**, indicating minimal warp divergence.
+- **Memory Safety:** Verified with `valgrind` (CPU) and NVIDIA `compute-sanitizer` (GPU), with **0 memory leaks and 0 invalid memory accesses** across extensive testing.
+- **CPU Limitations:** CPU benchmarks beyond 50 tokens were omitted due to impractically long runtimes.
+- **Framework Comparison (Specialized vs General-Purpose):** In single-sequence greedy decoding, Cu-Transformer achieved up to **~1.36x higher throughput** and **~1.35x lower total latency** compared to Hugging Face + PyTorch. This gain is primarily due to reduced framework overhead and a specialized fixed-buffer decode path.
 
-- **The Baseline (What was compared):** The baseline is the standard Hugging Face `transformers` library running PyTorch in eager mode. Both implementations executed identical greedy decoding workloads (`use_cache=True`) on an NVIDIA RTX 3060.
-- **Fairness & Interpretation of Results:** The custom Cu-Transformer engine is a highly specialized implementation targeting a single decoding strategy (greedy)  with tightly controlled memory layouts and execution flow. In contrast, Hugging Face `generate()` is a general-purpose API designed to support a wide range of decoding strategies, batching modes, and model architectures. As a result, this comparison should be interpreted as **specialized vs general-purpose execution**, not as a statement that one approach is universally faster.
-- **The JIT / `torch.compile` Context:** PyTorch 2.x `torch.compile` does work for Hugging Face models and was enabled in the benchmark. However, autoregressive generation still tends to limit how much benefit compilation can deliver in the default `generate()` path, because graph breaks and shape variability reduce optimization opportunities. In particular, Hugging Face documents that the default dynamic KV cache prevents taking advantage of most JIT optimizations, while fixed-size caches such as `StaticCache` are more compatible with `torch.compile`. Cu-Transformer avoids much of this overhead by using a specialized decode path with preallocated buffers and fixed execution patterns. :contentReference[oaicite:0]{index=0}
-- **PyTorch TTFT (Time To First Token):** TTFT is not reported for PyTorch because `model.generate()` is a blocking function that bundles prefill and decode phases together. Extracting TTFT requires a custom streamer hook, so the comparison focuses on total latency and throughput instead.
-- **Scope of the Comparison:** Cu-Transformer was built as a low-level exploration of GPU execution. This benchmark does **not** compare against optimized production inference systems (e.g., vLLM, TensorRT-LLM), which implement advanced techniques such as FlashAttention, PagedAttention, kernel fusion, and continuous batching. Those systems are designed to close or exceed this performance gap in real-world deployments.
+# Benchmarking Methodology & Interpretation
 
 
+The benchmarks demonstrate that Cu-Transformer reduces framework overhead and memory allocation costs by executing custom CUDA kernels directly. The following context is important for interpreting the results:
 
+- **The Baseline (What was compared):** The baseline is Hugging Face `transformers` running PyTorch. Both implementations executed identical greedy (argmax) decoding workloads (`use_cache=True`) on an NVIDIA RTX 3060.
+
+- **Fairness & Interpretation of Results:** Cu-Transformer is a specialized implementation targeting a single decoding strategy (greedy / argmax) with tightly controlled memory layout and execution flow. In contrast, Hugging Face `generate()` is a general-purpose API supporting multiple decoding strategies and batching modes. This comparison should therefore be interpreted as **specialized vs general-purpose execution**, not a universal performance comparison.
+
+- **The JIT / `torch.compile` Context:** PyTorch 2.x `torch.compile` was enabled and does apply to Hugging Face models. However, autoregressive generation limits optimization opportunities due to graph breaks and dynamic shapes. The default dynamic KV cache further reduces compile effectiveness, whereas fixed-size caches are more compatible with JIT-style optimization. Cu-Transformer avoids this by using a fixed-buffer decode path.
+
+- **PyTorch TTFT (Time To First Token):** TTFT is not reported because `model.generate()` is a blocking function that combines prefill and decode phases. Extracting TTFT requires a custom streamer, so the comparison focuses on total latency and throughput.
+
+- **Scope of the Comparison:** This is not a comparison against production inference systems (e.g., vLLM, TensorRT-LLM), which use advanced techniques such as FlashAttention, PagedAttention, and continuous batching.
 
 # CPU vs GPU Benchmark Comparison
 
@@ -65,7 +71,10 @@ The benchmarks demonstrate that Cu-Transformer successfully reduces Python inter
 
 ---
 
-## PyTorch (Huggingface) vs GPU Benchmark Comparison:
+# PyTorch (Huggingface) vs GPU Benchmark Comparison:
+
+> **Note:** The observed speedup does not imply that Cu-Transformer is universally faster than PyTorch. The improvement comes from specializing for a single decoding path (greedy / argmax) and reducing framework overhead, whereas PyTorch and Hugging Face are designed for generality and flexibility across many use cases.
+
 
 | Tokens | GPU Total Time (s) | PyTorch Total Time (s) | Speedup (Total Time) | GPU Throughput (tok/s) | PyTorch Throughput (tok/s) | Speedup (Throughput) |
 | ------ | ------------------ | ---------------------- | -------------------- | ---------------------- | -------------------------- | -------------------- |
