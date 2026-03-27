@@ -173,6 +173,8 @@ $$
 ## GPU Performance
 !["GPU"](./benchmarks/gpu_benchmarks/benchmark_results_gpu.png "GPU Performance")
 
+## PyTorch (Huggingface) Performance
+!["PyTorch"](./benchmarks/hf_benchmarks/benchmark_results_pytorch.png "PyTorch Performance")
 ---
 # Hardware & Software
 - **GPU:** NVIDIA GeForce RTX 3060  
