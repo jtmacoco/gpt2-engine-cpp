@@ -134,7 +134,7 @@ int main(int argc, char** argv) {
     Tokenizer tokenizer(vocab_path, merges_path);
 
     std::string input = "The quick brown fox jumps over the lazy dog and runs into the forest";
-    int tokens_to_generate = 128;               // better default for stable TPOT
+    int tokens_to_generate = 1;               // better default for stable TPOT
     if (argc > 1) tokens_to_generate = std::stoi(argv[1]);
 
     std::vector<int> prompt_tokens = tokenizer.Encoder(input);
