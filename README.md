@@ -29,11 +29,17 @@ GPT2 (124M parameter) architecture.
 # Results & Validation
 
 - **Mathematical Correctness:** Achieved Mean Squared Error (MSE) ≈ `0.0` and Maximum Absolute Difference < `1e-3` in FP32 logits compared to PyTorch `F.scaled_dot_product_attention`.
+
 - **Hardware Acceleration (CPU → GPU):** Up to **544x reduction in latency** by replacing sequential CPU matrix operations with custom CUDA kernels.
+
 - **Throughput Scaling:** With KV caching, achieved up to **1872.46x higher token throughput** at longer sequence lengths vs CPU.
+
 - **Hardware Efficiency:** Measured via NVIDIA Nsight Compute (`ncu`), achieving **99.37% branch efficiency**, indicating minimal warp divergence.
+
 - **Memory Safety:** Verified with `valgrind` (CPU) and NVIDIA `compute-sanitizer` (GPU), with **0 memory leaks and 0 invalid memory accesses** across extensive testing.
+
 - **CPU Limitations:** CPU benchmarks beyond 50 tokens were omitted due to impractically long runtimes.
+
 - **Framework Comparison (Specialized vs General-Purpose):** In single-sequence greedy decoding, Cu-Transformer achieved up to **~1.36x higher throughput** and **~1.35x lower total latency** compared to Hugging Face + PyTorch. This gain is primarily due to reduced framework overhead and a specialized fixed-buffer decode path.
 
 # Benchmarking Methodology & Interpretation
